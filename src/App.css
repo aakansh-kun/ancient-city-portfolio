@@ -461,10 +461,12 @@ h1, h2, h3 {
 /* ============================================================
    MOBILE LANDSCAPE COMPACT UI MODE
    Dedicated compact tokens & density for short-height landscape phones (height <= 500px).
+   Scoped strictly to pointer: coarse or the compact phone class.
    Desktop (>= 1200px / height > 500px) and Tablet Landscape (1024x768, 1180x820)
    remain 100% LOCKED / UNTOUCHED.
    ============================================================ */
-@media (orientation: landscape) and (max-height: 500px) {
+@media (orientation: landscape) and (max-height: 500px) and (pointer: coarse),
+       (orientation: landscape) and (max-height: 500px) and (max-width: 960px) {
   :root {
     --ui-title: clamp(26px, 4.2vw, 36px);
     --ui-heading: clamp(18px, 2.5vw, 21px);
@@ -577,7 +579,7 @@ h1, h2, h3 {
 }
 
 /* ============================================================
-   TABLET LANDSCAPE (768px – 1199px width, height > 500px)
+   TABLET LANDSCAPE (700px – 1199px width, height > 500px)
    Proportional comfort scaling for widescreen tablets
    ============================================================ */
 @media (orientation: landscape) and (min-height: 501px) and (max-width: 1199px) {
@@ -604,5 +606,103 @@ h1, h2, h3 {
     font-size: 18px !important;
   }
 }
+
+/* ============================================================
+   DESKTOP (min-width: 1200px and height > 500px)
+   HARD-LOCKED PRE-MOBILE KNOWN-GOOD IMPLEMENTATION
+   ============================================================ */
+@media (min-width: 1200px) and (min-height: 501px) {
+  .minimal-nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 2rem 4rem !important;
+    height: auto !important;
+    box-sizing: border-box;
+    z-index: 100;
+    pointer-events: none;
+  }
+
+  .nav-brand {
+    font-family: 'Cinzel', serif;
+    font-weight: 700;
+    font-size: 1.2rem !important;
+    letter-spacing: 2px !important;
+    color: #fff;
+    pointer-events: auto;
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 3rem !important;
+    pointer-events: auto;
+  }
+
+  .nav-links span,
+  .nav-links a {
+    color: var(--ancient-text-dim);
+    text-decoration: none;
+    font-size: 14px !important;
+    letter-spacing: 2px !important;
+    transition: color 0.3s ease;
+    min-height: auto !important;
+  }
+
+  .scroll-indicator {
+    position: fixed;
+    bottom: 2rem !important;
+    left: 4rem !important;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--sculk-blue);
+    font-size: 10px;
+    letter-spacing: 2px;
+    transform: none !important;
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  .hero-title {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(52px, 5.5vw, 76px) !important;
+    font-weight: 700;
+    line-height: 1.1 !important;
+    letter-spacing: 2px !important;
+    color: #ffffff;
+    text-shadow: 0 0 20px rgba(0, 252, 240, 0.4);
+    margin: 0;
+  }
+
+  .hero-subtitle {
+    font-size: 20px !important;
+    color: var(--sculk-cyan);
+    letter-spacing: 3px !important;
+    margin-top: 0.5rem !important;
+    font-weight: 400;
+  }
+
+  .hero-desc {
+    color: var(--ancient-text-dim);
+    max-width: 600px !important;
+    margin-top: 1rem !important;
+    line-height: 1.7 !important;
+    font-size: 16px !important;
+  }
+
+  .section-label {
+    font-family: 'Cinzel', serif;
+    color: var(--sculk-blue);
+    letter-spacing: 4px !important;
+    font-size: 14px !important;
+    margin-bottom: 1rem !important;
+  }
+}
+
 
 

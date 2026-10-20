@@ -282,7 +282,7 @@ const START_Z = 15;
 const LEGACY_Z_AT_75 = 15 - 135 * 0.75; // -86.25 (Ensures original sections stay exactly the same up to 0.75)
 const FINAL_CAMERA_Z = -100; // The absolute final stop
 
-const CinematicCamera = ({ isPaused = false, isTouch = false }) => {
+const CinematicCamera = ({ isPaused = false, experienceMode = 'desktop' }) => {
   const lightRef = React.useRef();
 
   useFrame((state) => {
@@ -327,8 +327,7 @@ const CinematicCamera = ({ isPaused = false, isTouch = false }) => {
     let shakeX = 0;
     let shakeY = 0;
     if (progress > 0.81 && progress < 0.86) {
-      // Two subtle thumps in the anticipation zone (slightly dampened on touch)
-      const shakeAmp = isTouch ? 0.015 : 0.03;
+      const shakeAmp = experienceMode === 'mobile-landscape' ? 0.015 : 0.03;
       if (Math.abs(progress - 0.82) < 0.005 || Math.abs(progress - 0.85) < 0.005) {
         shakeX = (Math.random() - 0.5) * shakeAmp;
         shakeY = (Math.random() - 0.5) * shakeAmp;
@@ -342,9 +341,18 @@ const CinematicCamera = ({ isPaused = false, isTouch = false }) => {
     state.camera.rotation.x = -0.08;
 
     // Shift slightly to keep Warden on the left side of the screen
-    // Dampen pointer parallax on touch devices
-    const parallaxOffset = isTouch ? 0 : ((progress > 0.94) ? (state.mouse.x * 0.5) : 0);
-    const targetX = isTouch ? 0.4 : ((state.mouse.x * 0.3 + 0.5) + parallaxOffset);
+    // On Desktop: 100% original pointer parallax and positioning from pre-mobile 2cb7a83
+    let targetX;
+    if (experienceMode === 'desktop') {
+      const parallaxOffset = (progress > 0.94) ? (state.mouse.x * 0.5) : 0;
+      targetX = (state.mouse.x * 0.3 + 0.5) + parallaxOffset;
+    } else if (experienceMode === 'mobile-landscape') {
+      targetX = 0.4;
+    } else {
+      // Tablet
+      const parallaxOffset = (progress > 0.94) ? (state.mouse.x * 0.25) : 0;
+      targetX = (state.mouse.x * 0.2 + 0.5) + parallaxOffset;
+    }
     state.camera.position.x = THREE.MathUtils.lerp(state.camera.position.x, targetX, 0.02) + shakeX;
 
     if (lightRef.current) {
@@ -544,8 +552,11 @@ const SculkEcho = ({ isLandscapePhone = false }) => {
 // ============================================================
 // PortfolioOverlay — pure DOM, reads scrollProgress via rAF
 // ============================================================
-const PortfolioOverlay = ({ isLandscapePhone = false, isSmallLandscape = false, isTabletLandscape = false, isTouch = false }) => {
-  const isCompact = isLandscapePhone || isSmallLandscape;
+const PortfolioOverlay = ({ experienceMode = 'desktop' }) => {
+  const isDesktop = experienceMode === 'desktop';
+  const isMobileLandscape = experienceMode === 'mobile-landscape';
+  const isTablet = experienceMode === 'tablet';
+
   const [progress, setProgress] = React.useState(0);
   const [transmitReveal, setTransmitReveal] = React.useState(0);
   const [formFeedback, setFormFeedback] = React.useState({ state: 'idle', message: '' });
@@ -588,31 +599,172 @@ const PortfolioOverlay = ({ isLandscapePhone = false, isSmallLandscape = false, 
     return () => cancelAnimationFrame(raf);
   }, []);
 
-  const basePanelStyle = {
+  // Shared mail submission logic
+  const handleFormSubmit = async (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const name = form.elements['name']?.value?.trim() || '';
+    const email = form.elements['email']?.value?.trim() || '';
+    const message = form.elements['message']?.value?.trim() || '';
+    const recipientEmail = portfolioData.contact.email;
+
+    setFormFeedback({ state: 'submitting', message: '' });
+
+    if (!recipientEmail || recipientEmail === 'isagi@example.com') {
+      setFormFeedback({
+        state: 'notice',
+        message: 'Please update your receiving email address in src/portfolioData.js so FormSubmit can deliver to your inbox.'
+      });
+      setTimeout(() => {
+        setFormFeedback({ state: 'idle', message: '' });
+      }, 7000);
+      return;
+    }
+
+    try {
+      const res = await fetch(`https://formsubmit.co/ajax/${encodeURIComponent(recipientEmail)}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          name: name,
+          email: email,
+          message: message,
+          _subject: `New Transmission from ${name} [Portfolio]`,
+          _replyto: email,
+          _captcha: 'false',
+          _template: 'table'
+        })
+      });
+
+      const data = await res.json();
+      const isSuccess = data.success === 'true' || data.success === true || res.ok;
+      if (isSuccess) {
+        setFormFeedback({
+          state: 'success',
+          message: data.message || 'SIGNAL TRANSMITTED! Delivered directly to your inbox.'
+        });
+        form.reset();
+      } else {
+        setFormFeedback({
+          state: 'error',
+          message: data.message || 'Signal transmission failed. Please try again.'
+        });
+      }
+    } catch (err) {
+      console.error('Submission error:', err);
+      setFormFeedback({
+        state: 'error',
+        message: 'Network error encountered. Please check your connection and try again.'
+      });
+    } finally {
+      setTimeout(() => {
+        setFormFeedback(prev => prev.state === 'submitting' ? { state: 'idle', message: '' } : prev);
+      }, 6000);
+    }
+  };
+
+  // Original desktop base panel style from 2cb7a83
+  const desktopBasePanelStyle = {
     background: 'rgba(2, 8, 10, 0.72)',
     backdropFilter: 'blur(10px)',
     WebkitBackdropFilter: 'blur(10px)',
     border: '1px solid rgba(0, 220, 210, 0.15)',
     boxShadow: 'inset 0 0 20px rgba(0, 220, 210, 0.05), 0 20px 60px rgba(0, 0, 0, 0.25)',
     borderRadius: '8px',
-    padding: isCompact ? '18px 22px' : '32px 36px',
+    padding: '32px 36px',
+    pointerEvents: 'auto'
+  };
+
+  // Original desktop transmit panel style from 2cb7a83
+  const desktopTransmitPanelStyle = {
+    ...desktopBasePanelStyle,
+    background: 'rgba(2, 9, 11, 0.78)',
+    border: '1px solid rgba(0, 220, 210, 0.18)',
+    padding: '36px 40px 34px'
+  };
+
+  // Mobile landscape compact panel styles
+  const mobileBasePanelStyle = {
+    background: 'rgba(2, 8, 10, 0.72)',
+    backdropFilter: 'blur(10px)',
+    WebkitBackdropFilter: 'blur(10px)',
+    border: '1px solid rgba(0, 220, 210, 0.15)',
+    boxShadow: 'inset 0 0 20px rgba(0, 220, 210, 0.05), 0 20px 60px rgba(0, 0, 0, 0.25)',
+    borderRadius: '8px',
+    padding: '18px 22px',
     pointerEvents: 'auto',
     boxSizing: 'border-box'
   };
 
-  const transmitPanelStyle = {
-    ...basePanelStyle,
+  const mobileTransmitPanelStyle = {
+    ...mobileBasePanelStyle,
     background: 'rgba(2, 9, 11, 0.78)',
     border: '1px solid rgba(0, 220, 210, 0.18)',
-    padding: isCompact ? '18px 20px' : '36px 40px 34px'
+    padding: '18px 20px'
   };
 
-  // Continuous opacity and subtle translation based on camera proximity
+  // Section style mapping
   const sectionStyle = (name, align = 'left') => {
-    const topSafeZone = isCompact ? 'max(60px, calc(env(safe-area-inset-top) + 56px))' : '0';
-    const bottomSafeZone = isCompact ? 'max(14px, env(safe-area-inset-bottom))' : '0';
+    // 1. DESKTOP: 100% Exact original implementation from 2cb7a83
+    if (isDesktop) {
+      if (name === 'contact') {
+        return {
+          position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
+          display: 'flex', flexDirection: 'column', justifyContent: 'center',
+          padding: '0 10vw 0 50vw', textAlign: 'right',
+          opacity: transmitReveal,
+          transform: `translateY(${16 * (1 - transmitReveal)}px)`,
+          pointerEvents: transmitReveal > 0.5 ? 'auto' : 'none',
+          visibility: transmitReveal > 0.01 ? 'visible' : 'hidden'
+        };
+      }
 
-    // Custom transmit reveal logic tied directly to Warden completion
+      let center, radius;
+      switch(name) {
+        case 'hero': center = 0.02; radius = 0.13; break;
+        case 'about': center = 0.20; radius = 0.10; break;
+        case 'experience': center = 0.35; radius = 0.11; break;
+        case 'skills': center = 0.52; radius = 0.10; break;
+        case 'projects': center = 0.68; radius = 0.10; break;
+        default: center = 0; radius = 0;
+      }
+
+      const dist = Math.abs(progress - center);
+      let opacity = 0;
+      let translateY = 10;
+      
+      if (dist < radius) {
+        const normalized = dist / radius; // 0 (center) to 1 (edge)
+        opacity = 1 - Math.pow(normalized, 2.5); // Stays at 1 longer, drops off smoothly
+        translateY = (progress - center) > 0 ? (normalized * -10) : (normalized * 10);
+      }
+
+      return {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        padding: align === 'right' ? '0 10vw 0 50vw' : align === 'center' ? '0 15vw' : '0 50vw 0 10vw',
+        textAlign: align === 'right' ? 'right' : align === 'center' ? 'center' : 'left',
+        opacity,
+        transform: `translateY(${translateY}px)`,
+        pointerEvents: opacity > 0.5 ? 'auto' : 'none',
+        visibility: opacity > 0.01 ? 'visible' : 'hidden',
+        transition: 'opacity 0.1s linear, transform 0.1s linear'
+      };
+    }
+
+    // 2. MOBILE LANDSCAPE & TABLET
+    const topSafeZone = isMobileLandscape ? 'max(60px, calc(env(safe-area-inset-top) + 56px))' : '0';
+    const bottomSafeZone = isMobileLandscape ? 'max(14px, env(safe-area-inset-bottom))' : '0';
+
     if (name === 'contact') {
       return {
         position: 'absolute',
@@ -625,8 +777,8 @@ const PortfolioOverlay = ({ isLandscapePhone = false, isSmallLandscape = false, 
         justifyContent: 'center',
         paddingTop: topSafeZone,
         paddingBottom: bottomSafeZone,
-        paddingLeft: isCompact ? '52vw' : '50vw',
-        paddingRight: isCompact ? 'max(4.5vw, env(safe-area-inset-right))' : '10vw',
+        paddingLeft: isMobileLandscape ? '52vw' : '50vw',
+        paddingRight: isMobileLandscape ? 'max(4.5vw, env(safe-area-inset-right))' : '10vw',
         boxSizing: 'border-box',
         textAlign: 'right',
         opacity: transmitReveal,
@@ -651,23 +803,21 @@ const PortfolioOverlay = ({ isLandscapePhone = false, isSmallLandscape = false, 
     let translateY = 10;
     
     if (dist < radius) {
-      const normalized = dist / radius; // 0 (center) to 1 (edge)
-      opacity = 1 - Math.pow(normalized, 2.5); // Stays at 1 longer, drops off smoothly
-      
-      // Depth movement: if arriving (progress < center), move up from 10px. If leaving, move down to -10px.
+      const normalized = dist / radius;
+      opacity = 1 - Math.pow(normalized, 2.5);
       translateY = (progress - center) > 0 ? (normalized * -10) : (normalized * 10);
     }
 
     let paddingLeft, paddingRight;
     if (align === 'right') {
-      paddingLeft = isCompact ? '50vw' : '50vw';
-      paddingRight = isCompact ? 'max(4.5vw, env(safe-area-inset-right))' : '10vw';
+      paddingLeft = isMobileLandscape ? '50vw' : '50vw';
+      paddingRight = isMobileLandscape ? 'max(4.5vw, env(safe-area-inset-right))' : '10vw';
     } else if (align === 'center') {
-      paddingLeft = isCompact ? 'max(24px, env(safe-area-inset-left))' : '15vw';
-      paddingRight = isCompact ? 'max(24px, env(safe-area-inset-right))' : '15vw';
+      paddingLeft = isMobileLandscape ? 'max(24px, env(safe-area-inset-left))' : '15vw';
+      paddingRight = isMobileLandscape ? 'max(24px, env(safe-area-inset-right))' : '15vw';
     } else { // left
-      paddingLeft = isCompact ? 'max(24px, env(safe-area-inset-left))' : '10vw';
-      paddingRight = isCompact ? '50vw' : '50vw';
+      paddingLeft = isMobileLandscape ? 'max(24px, env(safe-area-inset-left))' : '10vw';
+      paddingRight = isMobileLandscape ? '50vw' : '50vw';
     }
 
     return {
@@ -694,347 +844,465 @@ const PortfolioOverlay = ({ isLandscapePhone = false, isSmallLandscape = false, 
   };
 
   return (
-    <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100dvh', pointerEvents: 'none', zIndex: 10 }}>
+    <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: isDesktop ? '100vh' : '100dvh', pointerEvents: 'none', zIndex: 10 }}>
 
       {/* HERO — 0 to 14% */}
       <div style={sectionStyle('hero', 'left')}>
-        <div style={{ position: 'absolute', top: 0, left: 0, width: isCompact ? '48vw' : '60vw', height: '100vh', background: 'linear-gradient(to right, rgba(2,4,6,0.85) 0%, rgba(2,4,6,0) 100%)', zIndex: -1 }}></div>
-        <div style={{ maxWidth: isCompact ? 'min(440px, 46vw)' : '800px' }}>
-          <h1 className="hero-title">{portfolioData.hero.title}</h1>
-          <h2 className="hero-subtitle">{portfolioData.hero.subtitle}</h2>
-          <p className="hero-desc">{portfolioData.hero.desc}</p>
-          <div style={{ display: 'flex', gap: isCompact ? '1.2rem' : '2rem', marginTop: isCompact ? '0.8rem' : '2rem', alignItems: 'center' }}>
-            <span style={{ color: 'var(--sculk-blue)', letterSpacing: '2px', fontSize: isCompact ? '11px' : '12px' }}>SCROLL TO EXPLORE ↓</span>
-            <a href={portfolioData.hero.resumeUrl} target="_blank" rel="noreferrer" className="cinematic-link" style={{ letterSpacing: '2px', fontSize: isCompact ? '11px' : '12px', pointerEvents: 'auto', minHeight: isCompact ? '34px' : '40px', display: 'inline-flex', alignItems: 'center' }}>DOWNLOAD RESUME</a>
+        <div style={{ position: 'absolute', top: 0, left: 0, width: isMobileLandscape ? '48vw' : '60vw', height: '100vh', background: 'linear-gradient(to right, rgba(2,4,6,0.85) 0%, rgba(2,4,6,0) 100%)', zIndex: -1 }}></div>
+        {isMobileLandscape ? (
+          <div style={{ maxWidth: 'min(440px, 46vw)' }}>
+            <h1 className="hero-title">{portfolioData.hero.title}</h1>
+            <h2 className="hero-subtitle">{portfolioData.hero.subtitle}</h2>
+            <p className="hero-desc">{portfolioData.hero.desc}</p>
+            <div style={{ display: 'flex', gap: '1.2rem', marginTop: '0.8rem', alignItems: 'center' }}>
+              <span style={{ color: 'var(--sculk-blue)', letterSpacing: '2px', fontSize: '11px' }}>SCROLL TO EXPLORE ↓</span>
+              <a href={portfolioData.hero.resumeUrl} target="_blank" rel="noreferrer" className="cinematic-link" style={{ letterSpacing: '2px', fontSize: '11px', pointerEvents: 'auto', minHeight: '34px', display: 'inline-flex', alignItems: 'center' }}>DOWNLOAD RESUME</a>
+            </div>
           </div>
-        </div>
+        ) : (
+          <>
+            <h1 className="hero-title">{portfolioData.hero.title}</h1>
+            <h2 className="hero-subtitle">{portfolioData.hero.subtitle}</h2>
+            <p className="hero-desc">{portfolioData.hero.desc}</p>
+            <div style={{ display: 'flex', gap: '2rem', marginTop: '2rem', alignItems: 'center' }}>
+              <span style={{ color: 'var(--sculk-blue)', letterSpacing: '2px', fontSize: '12px' }}>SCROLL TO EXPLORE ↓</span>
+              <a href={portfolioData.hero.resumeUrl} target="_blank" rel="noreferrer" className="cinematic-link" style={{ letterSpacing: '2px', fontSize: '12px', pointerEvents: 'auto' }}>DOWNLOAD RESUME</a>
+            </div>
+          </>
+        )}
       </div>
 
       {/* ABOUT — 14 to 28% */}
       <div style={sectionStyle('about', 'right')}>
-        <div style={{ ...basePanelStyle, width: isCompact ? 'min(44vw, 480px)' : 'auto', maxWidth: isCompact ? 'min(44vw, 480px)' : '600px', marginLeft: 'auto', textAlign: 'left' }}>
-          <h2 className="section-label" style={{ fontSize: isCompact ? '12px' : '14px', letterSpacing: isCompact ? '0.22em' : '4px', marginBottom: isCompact ? '6px' : '1rem' }}>01 / ABOUT</h2>
-          <h3 style={{ fontSize: isCompact ? '22px' : '32px', color: '#fff', fontFamily: 'Cinzel, serif', marginBottom: isCompact ? '6px' : '1rem', lineHeight: 1.15 }}>{portfolioData.about.title}</h3>
-          <p className="hero-desc" style={{ fontSize: isCompact ? '13.5px' : '16px', lineHeight: isCompact ? '1.42' : '1.6', margin: 0, maxWidth: '100%' }}>{portfolioData.about.desc}</p>
-        </div>
+        {isMobileLandscape ? (
+          <div style={{ ...mobileBasePanelStyle, width: 'min(44vw, 480px)', maxWidth: 'min(44vw, 480px)', marginLeft: 'auto', textAlign: 'left' }}>
+            <h2 className="section-label" style={{ fontSize: '12px', letterSpacing: '0.22em', marginBottom: '6px' }}>01 / ABOUT</h2>
+            <h3 style={{ fontSize: '22px', color: '#fff', fontFamily: 'Cinzel, serif', marginBottom: '6px', lineHeight: 1.15 }}>{portfolioData.about.title}</h3>
+            <p className="hero-desc" style={{ fontSize: '13.5px', lineHeight: '1.42', margin: 0, maxWidth: '100%' }}>{portfolioData.about.desc}</p>
+          </div>
+        ) : (
+          <div style={{ ...desktopBasePanelStyle, maxWidth: '600px', marginLeft: 'auto', textAlign: 'left' }}>
+            <h2 className="section-label">01 / ABOUT</h2>
+            <h3 style={{ fontSize: '32px', color: '#fff', fontFamily: 'Cinzel, serif', marginBottom: '1rem' }}>{portfolioData.about.title}</h3>
+            <p className="hero-desc" style={{ fontSize: '16px', lineHeight: '1.6' }}>{portfolioData.about.desc}</p>
+          </div>
+        )}
       </div>
 
       {/* EXPERIENCE — 28 to 45% */}
       <div style={sectionStyle('experience', 'left')}>
-        <div 
-          style={{ 
-            ...basePanelStyle, 
-            width: isCompact ? 'min(44vw, 500px)' : 'auto',
-            maxWidth: isCompact ? 'min(44vw, 500px)' : '700px',
-            maxHeight: isCompact ? '74dvh' : 'none',
-            overflowY: isCompact ? 'auto' : 'visible'
-          }}
-          className={isCompact ? 'responsive-card-scroll' : ''}
-          onTouchMove={e => e.stopPropagation()}
-        >
-          <h2 className="section-label" style={{ fontSize: isCompact ? '13px' : '14px', letterSpacing: isCompact ? '0.22em' : '4px', marginBottom: isCompact ? '8px' : '1rem' }}>02 / ANCIENT ARCHIVES</h2>
-          {portfolioData.experience.map((exp, i) => (
-            <div key={i} style={{ marginTop: i > 0 ? (isCompact ? '18px' : '2rem') : (isCompact ? '4px' : '1rem') }}>
-              <h3 style={{ fontSize: isCompact ? '19px' : '24px', color: '#fff', fontFamily: 'Cinzel, serif', textTransform: 'uppercase', marginBottom: isCompact ? '4px' : '0.5rem', lineHeight: 1.2 }}>{exp.title}</h3>
-              <p style={{ color: 'var(--sculk-cyan)', letterSpacing: '2px', fontSize: isCompact ? '14px' : '14px', textTransform: 'uppercase', marginBottom: isCompact ? '6px' : '0.5rem' }}>{exp.company}</p>
-              <p style={{ color: 'var(--sculk-blue)', fontSize: isCompact ? '12px' : '12px', letterSpacing: '1px', marginBottom: isCompact ? '10px' : '0.5rem' }}>{exp.date}</p>
-              <p style={{ color: '#c0cdd1', fontSize: isCompact ? '13.5px' : '15px', lineHeight: isCompact ? '1.4' : '1.7', marginBottom: isCompact ? '8px' : '0.5rem' }}>{exp.desc}</p>
-              <p style={{ color: 'var(--sculk-cyan)', fontSize: isCompact ? '12px' : '12px', letterSpacing: '2px', margin: 0 }}>{exp.tech}</p>
-            </div>
-          ))}
-        </div>
+        {isMobileLandscape ? (
+          <div 
+            style={{ 
+              ...mobileBasePanelStyle, 
+              width: 'min(44vw, 500px)',
+              maxWidth: 'min(44vw, 500px)',
+              maxHeight: '74dvh',
+              overflowY: 'auto'
+            }}
+            className="responsive-card-scroll"
+            onTouchMove={e => e.stopPropagation()}
+          >
+            <h2 className="section-label" style={{ fontSize: '13px', letterSpacing: '0.22em', marginBottom: '8px' }}>02 / ANCIENT ARCHIVES</h2>
+            {portfolioData.experience.map((exp, i) => (
+              <div key={i} style={{ marginTop: i > 0 ? '18px' : '4px' }}>
+                <h3 style={{ fontSize: '19px', color: '#fff', fontFamily: 'Cinzel, serif', textTransform: 'uppercase', marginBottom: '4px', lineHeight: 1.2 }}>{exp.title}</h3>
+                <p style={{ color: 'var(--sculk-cyan)', letterSpacing: '2px', fontSize: '14px', textTransform: 'uppercase', marginBottom: '6px' }}>{exp.company}</p>
+                <p style={{ color: 'var(--sculk-blue)', fontSize: '12px', letterSpacing: '1px', marginBottom: '10px' }}>{exp.date}</p>
+                <p style={{ color: '#c0cdd1', fontSize: '13.5px', lineHeight: '1.4', marginBottom: '8px' }}>{exp.desc}</p>
+                <p style={{ color: 'var(--sculk-cyan)', fontSize: '12px', letterSpacing: '2px', margin: 0 }}>{exp.tech}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div style={{ ...desktopBasePanelStyle, maxWidth: '700px' }}>
+            <h2 className="section-label">02 / ANCIENT ARCHIVES</h2>
+            {portfolioData.experience.map((exp, i) => (
+              <div key={i} style={{ marginTop: i > 0 ? '2rem' : '1rem' }}>
+                <h3 style={{ fontSize: '24px', color: '#fff', fontFamily: 'Cinzel, serif', textTransform: 'uppercase' }}>{exp.title}</h3>
+                <p style={{ color: 'var(--sculk-cyan)', letterSpacing: '2px', fontSize: '14px', textTransform: 'uppercase', marginBottom: '0.5rem' }}>{exp.company}</p>
+                <p style={{ color: 'var(--sculk-blue)', fontSize: '12px', letterSpacing: '1px' }}>{exp.date}</p>
+                <p style={{ marginTop: '0.5rem', color: '#c0cdd1', fontSize: '15px', lineHeight: '1.7' }}>{exp.desc}</p>
+                <p style={{ marginTop: '0.5rem', color: 'var(--sculk-cyan)', fontSize: '12px', letterSpacing: '2px' }}>{exp.tech}</p>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* SKILLS — 45 to 60% */}
       <div style={sectionStyle('skills', 'center')}>
-        <div style={{ ...basePanelStyle, width: isCompact ? 'min(62vw, 580px)' : 'auto', maxWidth: isCompact ? 'min(62vw, 580px)' : '800px', margin: '0 auto' }}>
-          <h2 className="section-label" style={{ fontSize: isCompact ? '13px' : '14px', letterSpacing: isCompact ? '0.22em' : '4px', marginBottom: isCompact ? '10px' : '2rem' }}>03 / SCULK NETWORK</h2>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: isCompact ? '8px 10px' : '1.5rem', justifyContent: 'center', marginTop: isCompact ? '6px' : '2rem' }}>
-            {portfolioData.skills.map((skill, i) => (
-              <span key={i} style={{ 
-                height: isCompact ? '34px' : 'auto',
-                minHeight: isCompact ? '34px' : 'auto',
-                padding: isCompact ? '0 12px' : '0.4rem 1rem', 
-                color: '#fff', 
-                letterSpacing: isCompact ? '1.5px' : '2px', 
-                fontSize: isCompact ? '12px' : '16px', 
-                textShadow: '0 0 10px var(--sculk-cyan)', 
-                border: '1px solid rgba(0,252,240,0.2)', 
-                borderRadius: '4px',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxSizing: 'border-box'
-              }}>{skill}</span>
-            ))}
+        {isMobileLandscape ? (
+          <div style={{ ...mobileBasePanelStyle, width: 'min(62vw, 580px)', maxWidth: 'min(62vw, 580px)', margin: '0 auto' }}>
+            <h2 className="section-label" style={{ fontSize: '13px', letterSpacing: '0.22em', marginBottom: '10px' }}>03 / SCULK NETWORK</h2>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 10px', justifyContent: 'center', marginTop: '6px' }}>
+              {portfolioData.skills.map((skill, i) => (
+                <span key={i} style={{ 
+                  height: '34px',
+                  minHeight: '34px',
+                  padding: '0 12px', 
+                  color: '#fff', 
+                  letterSpacing: '1.5px', 
+                  fontSize: '12px', 
+                  textShadow: '0 0 10px var(--sculk-cyan)', 
+                  border: '1px solid rgba(0,252,240,0.2)', 
+                  borderRadius: '4px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxSizing: 'border-box'
+                }}>{skill}</span>
+              ))}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div style={{ ...desktopBasePanelStyle, maxWidth: '800px', margin: '0 auto' }}>
+            <h2 className="section-label">03 / SCULK NETWORK</h2>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.5rem', justifyContent: 'center', marginTop: '2rem' }}>
+              {portfolioData.skills.map((skill, i) => (
+                <span key={i} style={{ padding: '0.4rem 1rem', color: '#fff', letterSpacing: '2px', fontSize: '16px', textShadow: '0 0 10px var(--sculk-cyan)', border: '1px solid rgba(0,252,240,0.2)', borderRadius: '2px' }}>{skill}</span>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* PROJECTS — 60 to 77% */}
       <div style={sectionStyle('projects', 'center')}>
         <h2 className="section-label" style={{ 
-          fontSize: isCompact ? '13px' : '14px', 
-          letterSpacing: isCompact ? '0.22em' : '4px', 
-          marginTop: isCompact ? '12px' : '0',
-          marginBottom: isCompact ? '8px' : '2rem' 
+          fontSize: isMobileLandscape ? '13px' : undefined, 
+          letterSpacing: isMobileLandscape ? '0.22em' : undefined, 
+          marginTop: isMobileLandscape ? '12px' : undefined,
+          marginBottom: isMobileLandscape ? '8px' : '2rem' 
         }}>04 / ANCIENT RELICS</h2>
         {portfolioData.projects.map((proj, i) => (
-          <div 
-            key={i} 
-            style={{ 
-              ...basePanelStyle, 
-              padding: isCompact ? '16px 18px' : '32px 36px',
-              marginTop: i > 0 ? (isCompact ? '6px' : '2.5rem') : '0', 
-              textAlign: 'left', 
-              width: isCompact ? 'min(44vw, 440px)' : 'auto',
-              maxWidth: isCompact ? 'min(44vw, 440px)' : '600px', 
-              maxHeight: isCompact ? '42dvh' : 'none',
-              overflowY: isCompact ? 'auto' : 'visible',
-              alignSelf: i % 2 === 0 ? 'flex-end' : 'flex-start' 
-            }}
-            className={isCompact ? 'responsive-card-scroll' : ''}
-            onTouchMove={e => e.stopPropagation()}
-          >
-            <h3 style={{ fontSize: isCompact ? '19px' : '28px', color: '#fff', fontFamily: 'Cinzel, serif', textTransform: 'uppercase', marginBottom: isCompact ? '4px' : '0.5rem', lineHeight: 1.2 }}>{proj.title}</h3>
-            <p style={{ margin: isCompact ? '4px 0' : '0.5rem 0', color: '#c0cdd1', fontSize: isCompact ? '13.5px' : '15px', lineHeight: isCompact ? '1.4' : '1.7' }}>{proj.desc}</p>
-            <p style={{ fontSize: isCompact ? '11.5px' : '12px', color: 'var(--sculk-cyan)', letterSpacing: '2px', margin: isCompact ? '4px 0 8px' : '0.5rem 0 1rem' }}>{proj.tech}</p>
-            <div style={{ display: 'flex', gap: isCompact ? '1.2rem' : '2rem' }}>
-              <a href={proj.link} className="cinematic-link" style={{ fontSize: isCompact ? '12px' : '13px', letterSpacing: '1px', minHeight: isCompact ? '32px' : '40px', display: 'inline-flex', alignItems: 'center' }}>VIEW PROJECT →</a>
-              <a href={proj.source} className="cinematic-link" style={{ fontSize: isCompact ? '12px' : '13px', letterSpacing: '1px', minHeight: isCompact ? '32px' : '40px', display: 'inline-flex', alignItems: 'center' }}>VIEW SOURCE →</a>
+          isMobileLandscape ? (
+            <div 
+              key={i} 
+              style={{ 
+                ...mobileBasePanelStyle, 
+                padding: '16px 18px',
+                marginTop: i > 0 ? '6px' : '0', 
+                textAlign: 'left', 
+                width: 'min(44vw, 440px)',
+                maxWidth: 'min(44vw, 440px)', 
+                maxHeight: '42dvh',
+                overflowY: 'auto',
+                alignSelf: i % 2 === 0 ? 'flex-end' : 'flex-start' 
+              }}
+              className="responsive-card-scroll"
+              onTouchMove={e => e.stopPropagation()}
+            >
+              <h3 style={{ fontSize: '19px', color: '#fff', fontFamily: 'Cinzel, serif', textTransform: 'uppercase', marginBottom: '4px', lineHeight: 1.2 }}>{proj.title}</h3>
+              <p style={{ margin: '4px 0', color: '#c0cdd1', fontSize: '13.5px', lineHeight: '1.4' }}>{proj.desc}</p>
+              <p style={{ fontSize: '11.5px', color: 'var(--sculk-cyan)', letterSpacing: '2px', margin: '4px 0 8px' }}>{proj.tech}</p>
+              <div style={{ display: 'flex', gap: '1.2rem' }}>
+                <a href={proj.link} className="cinematic-link" style={{ fontSize: '12px', letterSpacing: '1px', minHeight: '32px', display: 'inline-flex', alignItems: 'center' }}>VIEW PROJECT →</a>
+                <a href={proj.source} className="cinematic-link" style={{ fontSize: '12px', letterSpacing: '1px', minHeight: '32px', display: 'inline-flex', alignItems: 'center' }}>VIEW SOURCE →</a>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div key={i} style={{ ...desktopBasePanelStyle, marginTop: i > 0 ? '2.5rem' : '0', textAlign: 'left', maxWidth: '600px', alignSelf: i % 2 === 0 ? 'flex-end' : 'flex-start' }}>
+              <h3 style={{ fontSize: '28px', color: '#fff', fontFamily: 'Cinzel, serif', textTransform: 'uppercase' }}>{proj.title}</h3>
+              <p style={{ margin: '0.5rem 0', color: '#c0cdd1', fontSize: '15px', lineHeight: '1.7' }}>{proj.desc}</p>
+              <p style={{ fontSize: '12px', color: 'var(--sculk-cyan)', letterSpacing: '2px', marginBottom: '1rem' }}>{proj.tech}</p>
+              <div style={{ display: 'flex', gap: '2rem' }}>
+                <a href={proj.link} className="cinematic-link" style={{ fontSize: '13px', letterSpacing: '1px' }}>VIEW PROJECT →</a>
+                <a href={proj.source} className="cinematic-link" style={{ fontSize: '13px', letterSpacing: '1px' }}>VIEW SOURCE →</a>
+              </div>
+            </div>
+          )
         ))}
       </div>
 
       {/* CONTACT — 92 to 100% */}
       <div style={sectionStyle('contact', 'right')}>
-        <div 
-          style={{ 
-            ...transmitPanelStyle, 
-            width: isCompact ? 'min(44vw, 480px)' : 'min(540px, calc(100vw - 48px))', 
-            maxWidth: isCompact ? '480px' : '540px',
-            marginLeft: 'auto', 
-            textAlign: 'left',
-            maxHeight: (isCompact && isKeyboardActive) ? 'calc(100dvh - 16px)' : (isCompact ? 'min(375px, calc(100dvh - 20px))' : 'none'),
-            overflowY: isCompact ? 'auto' : 'visible'
-          }}
-          className={isCompact ? 'responsive-card-scroll' : ''}
-          onTouchMove={e => e.stopPropagation()}
-        >
-          <h2 className="section-label" style={{ 
-            fontSize: isCompact ? '12px' : '14px', 
-            letterSpacing: isCompact ? '0.22em' : '4px',
-            marginBottom: isCompact ? '6px' : '1rem' 
-          }}>05 / TRANSMIT</h2>
-          <h3 style={{ 
-            fontSize: isCompact ? 'clamp(26px, 4.2vw, 36px)' : 'clamp(44px, 3.2vw, 58px)', 
-            color: '#fff', 
-            fontFamily: 'Cinzel, serif', 
-            lineHeight: isCompact ? '0.98' : '1.05', 
-            marginBottom: isCompact ? '8px' : '2rem' 
-          }}>LET'S BUILD<br />SOMETHING.</h3>
-
-          {/* Compact Contact Form */}
-          <form
+        {isMobileLandscape ? (
+          <div 
             style={{ 
-              display: 'flex', 
-              flexDirection: 'column', 
-              gap: isCompact ? '8px' : '16px', 
-              width: '100%', 
-              marginBottom: isCompact ? '6px' : '2.5rem' 
+              ...mobileTransmitPanelStyle, 
+              width: 'min(44vw, 480px)', 
+              maxWidth: '480px',
+              marginLeft: 'auto', 
+              textAlign: 'left',
+              maxHeight: (isKeyboardActive) ? 'calc(100dvh - 16px)' : 'min(375px, calc(100dvh - 20px))',
+              overflowY: 'auto'
             }}
-            onSubmit={async (e) => {
-              e.preventDefault();
-              const form = e.target;
-              const name = form.elements['name']?.value?.trim() || '';
-              const email = form.elements['email']?.value?.trim() || '';
-              const message = form.elements['message']?.value?.trim() || '';
-              const recipientEmail = portfolioData.contact.email;
-
-              setFormFeedback({ state: 'submitting', message: '' });
-
-              if (!recipientEmail || recipientEmail === 'isagi@example.com') {
-                setFormFeedback({
-                  state: 'notice',
-                  message: 'Please update your receiving email address in src/portfolioData.js so FormSubmit can deliver to your inbox.'
-                });
-                setTimeout(() => {
-                  setFormFeedback({ state: 'idle', message: '' });
-                }, 7000);
-                return;
-              }
-
-              try {
-                const res = await fetch(`https://formsubmit.co/ajax/${encodeURIComponent(recipientEmail)}`, {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                  },
-                  body: JSON.stringify({
-                    name: name,
-                    email: email,
-                    message: message,
-                    _subject: `New Transmission from ${name} [Portfolio]`,
-                    _replyto: email,
-                    _captcha: 'false',
-                    _template: 'table'
-                  })
-                });
-
-                const data = await res.json();
-                const isSuccess = data.success === 'true' || data.success === true || res.ok;
-                if (isSuccess) {
-                  setFormFeedback({
-                    state: 'success',
-                    message: data.message || 'SIGNAL TRANSMITTED! Delivered directly to your inbox.'
-                  });
-                  form.reset();
-                } else {
-                  setFormFeedback({
-                    state: 'error',
-                    message: data.message || 'Signal transmission failed. Please try again.'
-                  });
-                }
-              } catch (err) {
-                console.error('Submission error:', err);
-                setFormFeedback({
-                  state: 'error',
-                  message: 'Network error encountered. Please check your connection and try again.'
-                });
-              } finally {
-                setTimeout(() => {
-                  setFormFeedback(prev => prev.state === 'submitting' ? { state: 'idle', message: '' } : prev);
-                }, 6000);
-              }
-            }}
+            className="responsive-card-scroll"
+            onTouchMove={e => e.stopPropagation()}
           >
-            <input
-              name="name"
-              required
-              type="text"
-              placeholder="NAME"
-              onFocus={() => { if (isCompact) setIsKeyboardActive(true); }}
-              onBlur={() => { setIsKeyboardActive(false); }}
-              style={{
-                background: 'rgba(0,0,0,0.28)',
-                border: '1px solid rgba(0,252,240,0.2)',
-                padding: isCompact ? '6px 12px' : '16px',
-                fontSize: isCompact ? '13.5px' : '15px',
-                color: '#fff',
-                borderRadius: '2px',
-                outline: 'none',
-                height: isCompact ? '38px' : '56px',
-                minHeight: isCompact ? '38px' : '56px',
-                boxSizing: 'border-box'
+            <h2 className="section-label" style={{ 
+              fontSize: '12px', 
+              letterSpacing: '0.22em', 
+              marginBottom: '6px' 
+            }}>05 / TRANSMIT</h2>
+            <h3 style={{ 
+              fontSize: 'clamp(26px, 4.2vw, 36px)', 
+              color: '#fff', 
+              fontFamily: 'Cinzel, serif', 
+              lineHeight: '0.98', 
+              marginBottom: '8px' 
+            }}>LET'S BUILD<br />SOMETHING.</h3>
+
+            {/* Compact Contact Form */}
+            <form
+              style={{ 
+                display: 'flex', 
+                flexDirection: 'column', 
+                gap: '8px', 
+                width: '100%', 
+                marginBottom: '6px' 
               }}
-            />
-            <input
-              name="email"
-              required
-              type="email"
-              placeholder="EMAIL"
-              onFocus={() => { if (isCompact) setIsKeyboardActive(true); }}
-              onBlur={() => { setIsKeyboardActive(false); }}
-              style={{
-                background: 'rgba(0,0,0,0.28)',
-                border: '1px solid rgba(0,252,240,0.2)',
-                padding: isCompact ? '6px 12px' : '16px',
-                fontSize: isCompact ? '13.5px' : '15px',
-                color: '#fff',
-                borderRadius: '2px',
-                outline: 'none',
-                height: isCompact ? '38px' : '56px',
-                minHeight: isCompact ? '38px' : '56px',
-                boxSizing: 'border-box'
-              }}
-            />
-            <textarea
-              name="message"
-              required
-              placeholder="MESSAGE"
-              onFocus={() => { if (isCompact) setIsKeyboardActive(true); }}
-              onBlur={() => { setIsKeyboardActive(false); }}
-              style={{
-                background: 'rgba(0,0,0,0.28)',
-                border: '1px solid rgba(0,252,240,0.2)',
-                padding: isCompact ? '6px 12px' : '16px',
-                fontSize: isCompact ? '13.5px' : '15px',
-                color: '#fff',
-                borderRadius: '2px',
-                outline: 'none',
-                resize: 'none',
-                height: isCompact ? '74px' : '145px',
-                minHeight: isCompact ? '74px' : '145px',
-                boxSizing: 'border-box'
-              }}
-            ></textarea>
-            <button
-              type="submit"
-              disabled={formFeedback.state === 'submitting'}
-              style={{
-                background: formFeedback.state === 'success' ? 'rgba(0,255,136,0.1)' : 'transparent',
-                border: `1px solid ${
-                  formFeedback.state === 'success'
-                    ? '#00ff88'
-                    : formFeedback.state === 'error'
-                    ? '#ff4b4b'
-                    : 'var(--sculk-cyan)'
-                }`,
-                color:
-                  formFeedback.state === 'success'
-                    ? '#00ff88'
-                    : formFeedback.state === 'error'
-                    ? '#ff4b4b'
-                    : 'var(--sculk-cyan)',
-                padding: '0',
-                height: isCompact ? '40px' : '56px',
-                minHeight: isCompact ? '40px' : '56px',
-                letterSpacing: '2px',
-                fontSize: isCompact ? '13px' : '15px',
-                cursor: formFeedback.state === 'submitting' ? 'wait' : 'pointer',
-                transition: 'all 0.3s ease',
-                boxSizing: 'border-box'
-              }}
+              onSubmit={handleFormSubmit}
             >
-              {formFeedback.state === 'submitting'
-                ? 'TRANSMITTING...'
-                : formFeedback.state === 'success'
-                ? 'SIGNAL TRANSMITTED ✓'
-                : formFeedback.state === 'error'
-                ? 'TRANSMISSION FAILED ✕'
-                : 'SEND SIGNAL →'}
-            </button>
-            {formFeedback.message && (
-              <p
+              <input
+                name="name"
+                required
+                type="text"
+                placeholder="NAME"
+                onFocus={() => { setIsKeyboardActive(true); }}
+                onBlur={() => { setIsKeyboardActive(false); }}
                 style={{
-                  margin: '0',
-                  fontSize: '11px',
-                  lineHeight: '1.3',
+                  background: 'rgba(0,0,0,0.28)',
+                  border: '1px solid rgba(0,252,240,0.2)',
+                  padding: '6px 12px',
+                  fontSize: '13.5px',
+                  color: '#fff',
+                  borderRadius: '2px',
+                  outline: 'none',
+                  height: '38px',
+                  minHeight: '38px',
+                  boxSizing: 'border-box'
+                }}
+              />
+              <input
+                name="email"
+                required
+                type="email"
+                placeholder="EMAIL"
+                onFocus={() => { setIsKeyboardActive(true); }}
+                onBlur={() => { setIsKeyboardActive(false); }}
+                style={{
+                  background: 'rgba(0,0,0,0.28)',
+                  border: '1px solid rgba(0,252,240,0.2)',
+                  padding: '6px 12px',
+                  fontSize: '13.5px',
+                  color: '#fff',
+                  borderRadius: '2px',
+                  outline: 'none',
+                  height: '38px',
+                  minHeight: '38px',
+                  boxSizing: 'border-box'
+                }}
+              />
+              <textarea
+                name="message"
+                required
+                placeholder="MESSAGE"
+                onFocus={() => { setIsKeyboardActive(true); }}
+                onBlur={() => { setIsKeyboardActive(false); }}
+                style={{
+                  background: 'rgba(0,0,0,0.28)',
+                  border: '1px solid rgba(0,252,240,0.2)',
+                  padding: '6px 12px',
+                  fontSize: '13.5px',
+                  color: '#fff',
+                  borderRadius: '2px',
+                  outline: 'none',
+                  resize: 'none',
+                  height: '74px',
+                  minHeight: '74px',
+                  boxSizing: 'border-box'
+                }}
+              ></textarea>
+              <button
+                type="submit"
+                disabled={formFeedback.state === 'submitting'}
+                style={{
+                  background: formFeedback.state === 'success' ? 'rgba(0,255,136,0.1)' : 'transparent',
+                  border: `1px solid ${
+                    formFeedback.state === 'success'
+                      ? '#00ff88'
+                      : formFeedback.state === 'error'
+                      ? '#ff4b4b'
+                      : 'var(--sculk-cyan)'
+                  }`,
                   color:
                     formFeedback.state === 'success'
                       ? '#00ff88'
                       : formFeedback.state === 'error'
                       ? '#ff4b4b'
-                      : '#00e5ff',
-                  letterSpacing: '0.5px'
+                      : 'var(--sculk-cyan)',
+                  padding: '0',
+                  height: '40px',
+                  minHeight: '40px',
+                  letterSpacing: '2px',
+                  fontSize: '13px',
+                  cursor: formFeedback.state === 'submitting' ? 'wait' : 'pointer',
+                  transition: 'all 0.3s ease',
+                  boxSizing: 'border-box'
                 }}
               >
-                {formFeedback.message}
-              </p>
-            )}
-          </form>
+                {formFeedback.state === 'submitting'
+                  ? 'TRANSMITTING...'
+                  : formFeedback.state === 'success'
+                  ? 'SIGNAL TRANSMITTED ✓'
+                  : formFeedback.state === 'error'
+                  ? 'TRANSMISSION FAILED ✕'
+                  : 'SEND SIGNAL →'}
+              </button>
+              {formFeedback.message && (
+                <p
+                  style={{
+                    margin: '0',
+                    fontSize: '11px',
+                    lineHeight: '1.3',
+                    color:
+                      formFeedback.state === 'success'
+                        ? '#00ff88'
+                        : formFeedback.state === 'error'
+                        ? '#ff4b4b'
+                        : '#00e5ff',
+                    letterSpacing: '0.5px'
+                  }}
+                >
+                  {formFeedback.message}
+                </p>
+              )}
+            </form>
 
-          <div style={{ display: 'flex', gap: isCompact ? '22px' : '2rem', marginTop: isCompact ? '12px' : '0', justifyContent: 'flex-start' }}>
-            <a href={`mailto:${portfolioData.contact.email}`} className="cinematic-link" style={{ fontSize: isCompact ? '11.5px' : '14px', letterSpacing: '2px', minHeight: isCompact ? '30px' : '38px', display: 'inline-flex', alignItems: 'center' }}>EMAIL</a>
-            <a href={portfolioData.contact.github} className="cinematic-link" style={{ fontSize: isCompact ? '11.5px' : '14px', letterSpacing: '2px', minHeight: isCompact ? '30px' : '38px', display: 'inline-flex', alignItems: 'center' }}>GITHUB</a>
-            <a href={portfolioData.contact.linkedin} className="cinematic-link" style={{ fontSize: isCompact ? '11.5px' : '14px', letterSpacing: '2px', minHeight: isCompact ? '30px' : '38px', display: 'inline-flex', alignItems: 'center' }}>LINKEDIN</a>
+            <div style={{ display: 'flex', gap: '22px', marginTop: '12px', justifyContent: 'flex-start' }}>
+              <a href={`mailto:${portfolioData.contact.email}`} className="cinematic-link" style={{ fontSize: '11.5px', letterSpacing: '2px', minHeight: '30px', display: 'inline-flex', alignItems: 'center' }}>EMAIL</a>
+              <a href={portfolioData.contact.github} className="cinematic-link" style={{ fontSize: '11.5px', letterSpacing: '2px', minHeight: '30px', display: 'inline-flex', alignItems: 'center' }}>GITHUB</a>
+              <a href={portfolioData.contact.linkedin} className="cinematic-link" style={{ fontSize: '11.5px', letterSpacing: '2px', minHeight: '30px', display: 'inline-flex', alignItems: 'center' }}>LINKEDIN</a>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div style={{ ...desktopTransmitPanelStyle, width: 'min(540px, calc(100vw - 48px))', marginLeft: 'auto', textAlign: 'left' }}>
+            <h2 className="section-label">05 / TRANSMIT</h2>
+            <h3 style={{ fontSize: 'clamp(44px, 3.2vw, 58px)', color: '#fff', fontFamily: 'Cinzel, serif', lineHeight: '1.0', marginBottom: '2rem' }}>LET'S BUILD<br />SOMETHING.</h3>
+
+            {/* Original Desktop Contact Form from 2cb7a83 */}
+            <form
+              style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%', marginBottom: '2.5rem' }}
+              onSubmit={handleFormSubmit}
+            >
+              <input
+                name="name"
+                required
+                type="text"
+                placeholder="NAME"
+                style={{
+                  background: 'rgba(0,0,0,0.28)',
+                  border: '1px solid rgba(0,252,240,0.2)',
+                  padding: '16px',
+                  fontSize: '15px',
+                  color: '#fff',
+                  borderRadius: '2px',
+                  outline: 'none',
+                  height: '56px',
+                  boxSizing: 'border-box'
+                }}
+              />
+              <input
+                name="email"
+                required
+                type="email"
+                placeholder="EMAIL"
+                style={{
+                  background: 'rgba(0,0,0,0.28)',
+                  border: '1px solid rgba(0,252,240,0.2)',
+                  padding: '16px',
+                  fontSize: '15px',
+                  color: '#fff',
+                  borderRadius: '2px',
+                  outline: 'none',
+                  height: '56px',
+                  boxSizing: 'border-box'
+                }}
+              />
+              <textarea
+                name="message"
+                required
+                placeholder="MESSAGE"
+                style={{
+                  background: 'rgba(0,0,0,0.28)',
+                  border: '1px solid rgba(0,252,240,0.2)',
+                  padding: '16px',
+                  fontSize: '15px',
+                  color: '#fff',
+                  borderRadius: '2px',
+                  outline: 'none',
+                  resize: 'none',
+                  height: '145px',
+                  boxSizing: 'border-box'
+                }}
+              ></textarea>
+              <button
+                type="submit"
+                disabled={formFeedback.state === 'submitting'}
+                style={{
+                  background: formFeedback.state === 'success' ? 'rgba(0,255,136,0.1)' : 'transparent',
+                  border: `1px solid ${
+                    formFeedback.state === 'success'
+                      ? '#00ff88'
+                      : formFeedback.state === 'error'
+                      ? '#ff4b4b'
+                      : 'var(--sculk-cyan)'
+                  }`,
+                  color:
+                    formFeedback.state === 'success'
+                      ? '#00ff88'
+                      : formFeedback.state === 'error'
+                      ? '#ff4b4b'
+                      : 'var(--sculk-cyan)',
+                  padding: '0',
+                  height: '56px',
+                  letterSpacing: '2px',
+                  fontSize: '15px',
+                  cursor: formFeedback.state === 'submitting' ? 'wait' : 'pointer',
+                  transition: 'all 0.3s ease',
+                  boxSizing: 'border-box'
+                }}
+              >
+                {formFeedback.state === 'submitting'
+                  ? 'TRANSMITTING...'
+                  : formFeedback.state === 'success'
+                  ? 'SIGNAL TRANSMITTED ✓'
+                  : formFeedback.state === 'error'
+                  ? 'TRANSMISSION FAILED ✕'
+                  : 'SEND SIGNAL →'}
+              </button>
+              {formFeedback.message && (
+                <p
+                  style={{
+                    margin: '0',
+                    fontSize: '13px',
+                    lineHeight: '1.4',
+                    color:
+                      formFeedback.state === 'success'
+                        ? '#00ff88'
+                        : formFeedback.state === 'error'
+                        ? '#ff4b4b'
+                        : '#00e5ff',
+                    letterSpacing: '0.5px'
+                  }}
+                >
+                  {formFeedback.message}
+                </p>
+              )}
+            </form>
+
+            <div style={{ display: 'flex', gap: '2rem', justifyContent: 'flex-start' }}>
+              <a href={`mailto:${portfolioData.contact.email}`} className="cinematic-link" style={{ fontSize: '14px', letterSpacing: '2px' }}>EMAIL</a>
+              <a href={portfolioData.contact.github} className="cinematic-link" style={{ fontSize: '14px', letterSpacing: '2px' }}>GITHUB</a>
+              <a href={portfolioData.contact.linkedin} className="cinematic-link" style={{ fontSize: '14px', letterSpacing: '2px' }}>LINKEDIN</a>
+            </div>
+          </div>
+        )}
       </div>
 
-      <SculkEcho isLandscapePhone={isCompact} />
+      <SculkEcho isLandscapePhone={isMobileLandscape} />
     </div>
   );
 };
@@ -1043,6 +1311,7 @@ const PortfolioOverlay = ({ isLandscapePhone = false, isSmallLandscape = false, 
 // Main Export — native scroll, no drei ScrollControls
 // ============================================================
 export default function AncientCityJourney({ 
+  experienceMode = 'desktop',
   isPaused = false, 
   isLandscapePhone = false,
   isSmallLandscape = false, 
@@ -1062,7 +1331,9 @@ export default function AncientCityJourney({
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  const isCompactPhone = isLandscapePhone || isSmallLandscape;
+  const isDesktop = experienceMode === 'desktop';
+  const isMobileLandscape = experienceMode === 'mobile-landscape' || isLandscapePhone || isSmallLandscape;
+  const isTablet = experienceMode === 'tablet' || isTabletLandscape;
 
   return (
     <>
@@ -1070,11 +1341,11 @@ export default function AncientCityJourney({
       <div className="scroll-driver" style={{ height: '800vh', width: '100%', position: 'relative', zIndex: -1 }} />
 
       {/* 3D Canvas layer — fixed viewport */}
-      <div style={{ width: '100vw', height: '100dvh', position: 'fixed', top: 0, left: 0, zIndex: 0, background: '#020406' }}>
+      <div style={{ width: '100vw', height: isDesktop ? '100vh' : '100dvh', position: 'fixed', top: 0, left: 0, zIndex: 0, background: '#020406' }}>
         <Canvas 
           frameloop={isPaused ? "demand" : "always"}
           shadows 
-          dpr={typeof window !== 'undefined' ? (isCompactPhone ? Math.min(window.devicePixelRatio, 1.25) : isTabletLandscape ? Math.min(window.devicePixelRatio, 1.5) : Math.min(window.devicePixelRatio, 2)) : 1}
+          dpr={typeof window !== 'undefined' ? (isMobileLandscape ? Math.min(window.devicePixelRatio, 1.25) : isTablet ? Math.min(window.devicePixelRatio, 1.5) : Math.min(window.devicePixelRatio, 2)) : 1}
           camera={{ position: [0, 1.6, 15], fov: 65 }} 
           gl={{ antialias: false, powerPreference: "high-performance", localClippingEnabled: true }}
         >
@@ -1084,7 +1355,7 @@ export default function AncientCityJourney({
 
           <React.Suspense fallback={null}>
 
-            <CinematicCamera isPaused={isPaused} isTouch={isTouch} />
+            <CinematicCamera isPaused={isPaused} experienceMode={experienceMode} />
 
             {/* The 3D environment is FIXED in world space */}
             <AncientCityGeometry />
@@ -1105,11 +1376,7 @@ export default function AncientCityJourney({
       </div>
 
       {/* Portfolio HTML overlay — COMPLETELY outside Canvas */}
-      <PortfolioOverlay 
-        isLandscapePhone={isCompactPhone} 
-        isTabletLandscape={isTabletLandscape}
-        isTouch={isTouch} 
-      />
+      <PortfolioOverlay experienceMode={experienceMode} />
     </>
   );
 }

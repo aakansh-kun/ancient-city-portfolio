@@ -59,15 +59,49 @@ export async function exitFullscreenSafe() {
 }
 
 /**
+ * Single Source of Truth for Experience Mode.
+ * Returns one of:
+ * - 'desktop': Standard desktop view (width >= 1200px or standard non-mobile viewport)
+ * - 'tablet': Tablet view in landscape (700px <= width < 1200px, height > 500px)
+ * - 'mobile-landscape': Compact view for mobile phones in landscape (height <= 500px)
+ * - 'portrait-rotate': Rotate splash screen for touch devices in portrait
+ */
+export function getExperienceMode(width, height, isTouchDevice, hasCoarsePointer) {
+  const isPortrait = height > width;
+  const isLandscape = !isPortrait;
+
+  // 1. Portrait touch device -> Must show Rotate Device screen
+  if (isTouchDevice && isPortrait) {
+    return 'portrait-rotate';
+  }
+
+  // 2. Mobile landscape: Touch/coarse device in landscape with short height (<= 500px)
+  // or viewport height <= 500px on narrow screen (width <= 960px)
+  if (isLandscape && height <= 500 && (hasCoarsePointer || isTouchDevice || width <= 960)) {
+    return 'mobile-landscape';
+  }
+
+  // 3. Tablet landscape: Width 700px-1199px, height > 500px
+  if (isLandscape && height > 500 && width < 1200 && width >= 700) {
+    return 'tablet';
+  }
+
+  // 4. Desktop: Default for width >= 1200px and standard desktop viewports
+  return 'desktop';
+}
+
+/**
  * Reliable orientation and device capability detection hook.
  * Distinguishes touch devices (phones/tablets) from desktop browsers.
  * Desktop users who resize windows into portrait will NOT be blocked.
- * Specifically detects short-height landscape phones (height <= 500px).
+ * Specifically isolates mobile landscape and tablet from desktop.
  */
 export function useOrientation() {
   const [state, setState] = useState(() => {
     if (typeof window === 'undefined') {
       return {
+        experienceMode: 'desktop',
+        isDesktop: true,
         isPortrait: false,
         isLandscape: true,
         isTouchDevice: false,
@@ -87,18 +121,19 @@ export function useOrientation() {
 
     // Detect if device is fundamentally touch-oriented (phone or tablet)
     const hasTouch = 'ontouchstart' in window || (navigator.maxTouchPoints && navigator.maxTouchPoints > 0);
-    const hasCoarsePointer = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+    const hasCoarsePointer = Boolean(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
     const isTouchDevice = Boolean(hasTouch && hasCoarsePointer);
 
-    // Short-height landscape phones (844x390, 852x393, 915x412, 932x430, etc.)
-    const isLandscapePhone = isLandscape && height <= 500;
-    const isTabletLandscape = isLandscape && height > 500 && height <= 850 && width <= 1200;
-
-    // ONLY show rotate splash for mobile/tablet touch devices in portrait
-    const shouldShowRotateSplash = isTouchDevice && isPortrait;
+    const experienceMode = getExperienceMode(width, height, isTouchDevice, hasCoarsePointer);
+    const isDesktop = experienceMode === 'desktop';
+    const isLandscapePhone = experienceMode === 'mobile-landscape';
+    const isTabletLandscape = experienceMode === 'tablet';
+    const shouldShowRotateSplash = experienceMode === 'portrait-rotate';
     const isFullscreen = isFullscreenActive();
 
     return {
+      experienceMode,
+      isDesktop,
       isPortrait,
       isLandscape,
       isTouchDevice,
@@ -120,18 +155,19 @@ export function useOrientation() {
 
       // Check touch capability
       const hasTouch = 'ontouchstart' in window || (navigator.maxTouchPoints && navigator.maxTouchPoints > 0);
-      const hasCoarsePointer = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+      const hasCoarsePointer = Boolean(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
       const isTouchDevice = Boolean(hasTouch && hasCoarsePointer);
 
-      // Short-height landscape phones (844x390, 852x393, 915x412, 932x430, etc.)
-      const isLandscapePhone = isLandscape && height <= 500;
-      const isTabletLandscape = isLandscape && height > 500 && height <= 850 && width <= 1200;
-
-      // Only show rotate splash for mobile/tablet touch devices in portrait
-      const shouldShowRotateSplash = isTouchDevice && isPortrait;
+      const experienceMode = getExperienceMode(width, height, isTouchDevice, hasCoarsePointer);
+      const isDesktop = experienceMode === 'desktop';
+      const isLandscapePhone = experienceMode === 'mobile-landscape';
+      const isTabletLandscape = experienceMode === 'tablet';
+      const shouldShowRotateSplash = experienceMode === 'portrait-rotate';
       const isFullscreen = isFullscreenActive();
 
       setState({
+        experienceMode,
+        isDesktop,
         isPortrait,
         isLandscape,
         isTouchDevice,
@@ -146,7 +182,6 @@ export function useOrientation() {
 
     const handleFullscreenChange = () => {
       handleUpdate();
-      // Ensure layout and Three.js resize listeners react to viewport changes
       setTimeout(() => {
         window.dispatchEvent(new Event('resize'));
       }, 60);
@@ -154,13 +189,8 @@ export function useOrientation() {
 
     window.addEventListener('resize', handleUpdate, { passive: true });
     window.addEventListener('orientationchange', handleUpdate, { passive: true });
-    document.addEventListener('fullscreenchange', handleFullscreenChange, { passive: true });
-    document.addEventListener('webkitfullscreenchange', handleFullscreenChange, { passive: true });
-
-    // Also listen to visualViewport if available
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', handleUpdate, { passive: true });
-    }
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
 
     handleUpdate();
 
@@ -169,12 +199,8 @@ export function useOrientation() {
       window.removeEventListener('orientationchange', handleUpdate);
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
       document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
-      if (window.visualViewport) {
-        window.visualViewport.removeEventListener('resize', handleUpdate);
-      }
     };
   }, []);
 
   return state;
 }
-

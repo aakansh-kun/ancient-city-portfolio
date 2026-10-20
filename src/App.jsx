@@ -7,7 +7,7 @@ import LandscapeFullscreenOverlay from './LandscapeFullscreenOverlay'
 import { useOrientation, requestFullscreenSafe, exitFullscreenSafe } from './hooks/useOrientation'
 
 function App() {
-  const { isTouchDevice, isLandscapePhone, isTabletLandscape, shouldShowRotateSplash, isFullscreen } = useOrientation();
+  const { experienceMode, isTouchDevice, isLandscapePhone, isTabletLandscape, shouldShowRotateSplash, isFullscreen } = useOrientation();
   const [isFullscreenOverlayDismissed, setIsFullscreenOverlayDismissed] = useState(false);
 
   const shouldShowFullscreenOverlay = isLandscapePhone && !shouldShowRotateSplash && !isFullscreen && !isFullscreenOverlayDismissed;
@@ -75,6 +75,7 @@ function App() {
       </div>
 
       <AncientCityJourney 
+        experienceMode={experienceMode}
         isPaused={shouldShowRotateSplash}
         isLandscapePhone={isLandscapePhone}
         isTabletLandscape={isTabletLandscape}
