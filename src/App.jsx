@@ -34,17 +34,17 @@ function App() {
 
       {/* Minimal Top Navigation */}
       <nav className="minimal-nav">
-        <div className="nav-brand" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} style={{ cursor: 'pointer' }}>{portfolioData.hero.title.toUpperCase()}</div>
+        <div className="nav-brand ui-brand" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} style={{ cursor: 'pointer' }}>{portfolioData.hero.title.toUpperCase()}</div>
         <div className="nav-links">
-          <span onClick={() => { const max = document.documentElement.scrollHeight - window.innerHeight; window.scrollTo({ top: max * 0.20, behavior: 'smooth' }); }} style={{cursor:'pointer', color:'var(--sculk-blue)'}}>ABOUT</span>
-          <span onClick={() => { const max = document.documentElement.scrollHeight - window.innerHeight; window.scrollTo({ top: max * 0.35, behavior: 'smooth' }); }} style={{cursor:'pointer', color:'var(--sculk-blue)'}}>ARCHIVES</span>
-          <span onClick={() => { const max = document.documentElement.scrollHeight - window.innerHeight; window.scrollTo({ top: max * 0.52, behavior: 'smooth' }); }} style={{cursor:'pointer', color:'var(--sculk-blue)'}}>NETWORK</span>
-          <span onClick={() => { const max = document.documentElement.scrollHeight - window.innerHeight; window.scrollTo({ top: max * 0.68, behavior: 'smooth' }); }} style={{cursor:'pointer', color:'var(--sculk-blue)'}}>RELICS</span>
-          <span onClick={() => { 
+          <span className="ui-nav" onClick={() => { const max = document.documentElement.scrollHeight - window.innerHeight; window.scrollTo({ top: max * 0.20, behavior: 'smooth' }); }}>ABOUT</span>
+          <span className="ui-nav" onClick={() => { const max = document.documentElement.scrollHeight - window.innerHeight; window.scrollTo({ top: max * 0.35, behavior: 'smooth' }); }}>ARCHIVES</span>
+          <span className="ui-nav" onClick={() => { const max = document.documentElement.scrollHeight - window.innerHeight; window.scrollTo({ top: max * 0.52, behavior: 'smooth' }); }}>NETWORK</span>
+          <span className="ui-nav" onClick={() => { const max = document.documentElement.scrollHeight - window.innerHeight; window.scrollTo({ top: max * 0.68, behavior: 'smooth' }); }}>RELICS</span>
+          <span className="ui-nav" onClick={() => { 
             const max = document.documentElement.scrollHeight - window.innerHeight; 
             globalFlags.skipWardenCinematic = true;
             window.scrollTo({ top: max, behavior: 'smooth' }); 
-          }} style={{cursor:'pointer', color:'var(--sculk-blue)'}}>TRANSMIT</span>
+          }}>TRANSMIT</span>
 
           {/* Unobtrusive Fullscreen Control for Mobile Landscape */}
           {isLandscapePhone && (

@@ -174,7 +174,7 @@ export default function RotateDeviceScreen({ isVisible }) {
             fontFamily: "'Nunito', sans-serif",
             fontSize: 'clamp(14px, 3.8vw, 16px)',
             lineHeight: 1.5,
-            color: 'var(--ancient-text-dim, #8faeb3)',
+            color: 'var(--text-secondary, #c5d4d8)',
             margin: '0 0 1.5rem 0',
             maxWidth: '340px'
           }}

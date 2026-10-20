@@ -479,7 +479,7 @@ const SculkEcho = ({ isLandscapePhone = false }) => {
           height: isLandscapePhone ? 'min(240px, calc(100dvh - 70px))' : '500px',
           marginBottom: isLandscapePhone ? '0.4rem' : '1rem',
           background: 'rgba(2, 4, 6, 0.94)',
-          border: '1px solid var(--sculk-blue)',
+          border: '1px solid var(--panel-border)',
           borderRadius: '8px',
           display: 'flex',
           flexDirection: 'column',
@@ -491,13 +491,13 @@ const SculkEcho = ({ isLandscapePhone = false }) => {
           <div style={{
             padding: isLandscapePhone ? '0.4rem 0.75rem' : '1rem',
             background: 'rgba(0, 252, 240, 0.1)',
-            borderBottom: '1px solid var(--sculk-blue)',
+            borderBottom: '1px solid var(--panel-border)',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center'
           }}>
-            <span style={{ color: 'var(--sculk-cyan)', fontFamily: 'Cinzel, serif', letterSpacing: '2px', fontSize: isLandscapePhone ? '12px' : '14px' }}>SCULK ECHO</span>
-            <button onClick={() => setIsOpen(false)} style={{ color: '#fff', background: 'none', border: 'none', cursor: 'pointer', fontSize: isLandscapePhone ? '16px' : '18px', padding: '4px' }}>✕</button>
+            <span style={{ color: 'var(--ancient-cyan)', fontFamily: 'var(--font-serif)', fontWeight: 700, letterSpacing: '2px', fontSize: isLandscapePhone ? '12px' : '14px' }}>SCULK ECHO</span>
+            <button onClick={() => setIsOpen(false)} style={{ color: 'var(--text-primary)', background: 'none', border: 'none', cursor: 'pointer', fontSize: isLandscapePhone ? '16px' : '18px', padding: '4px' }}>✕</button>
           </div>
 
           {/* Messages */}
@@ -513,14 +513,14 @@ const SculkEcho = ({ isLandscapePhone = false }) => {
               <div key={i} style={{
                 alignSelf: msg.sender === 'user' ? 'flex-end' : 'flex-start',
                 background: msg.sender === 'user' ? 'rgba(0, 252, 240, 0.15)' : 'rgba(255, 255, 255, 0.05)',
-                color: msg.sender === 'user' ? '#fff' : '#c0cdd1',
+                color: msg.sender === 'user' ? 'var(--text-primary)' : 'var(--text-secondary)',
                 padding: isLandscapePhone ? '0.4rem 0.7rem' : '0.75rem 1rem',
                 borderRadius: '4px',
                 maxWidth: '85%',
                 fontSize: isLandscapePhone ? '12px' : '14px',
                 lineHeight: '1.45',
-                borderLeft: msg.sender === 'paimon' ? '2px solid var(--sculk-cyan)' : 'none',
-                borderRight: msg.sender === 'user' ? '2px solid var(--sculk-blue)' : 'none'
+                borderLeft: msg.sender === 'paimon' ? '2px solid var(--ancient-cyan)' : 'none',
+                borderRight: msg.sender === 'user' ? '2px solid var(--ancient-cyan-muted)' : 'none'
               }}>
                 {msg.text}
               </div>
@@ -544,14 +544,15 @@ const SculkEcho = ({ isLandscapePhone = false }) => {
                 flex: 1,
                 background: 'rgba(0,0,0,0.5)',
                 border: '1px solid rgba(0,252,240,0.3)',
-                color: '#fff',
+                color: 'var(--text-primary)',
+                fontFamily: 'var(--font-sans)',
                 padding: isLandscapePhone ? '0.3rem 0.6rem' : '0.5rem 1rem',
                 fontSize: isLandscapePhone ? '13px' : '14px',
                 borderRadius: '4px',
                 outline: 'none'
               }}
             />
-            <button onClick={handleSend} style={{ background: 'rgba(0,252,240,0.1)', border: '1px solid var(--sculk-cyan)', color: 'var(--sculk-cyan)', padding: isLandscapePhone ? '0.3rem 0.75rem' : '0.5rem 1rem', borderRadius: '4px', cursor: 'pointer' }}>→</button>
+            <button onClick={handleSend} style={{ background: 'rgba(0,252,240,0.1)', border: '1px solid var(--ancient-cyan)', color: 'var(--ancient-cyan)', padding: isLandscapePhone ? '0.3rem 0.75rem' : '0.5rem 1rem', borderRadius: '4px', cursor: 'pointer' }}>→</button>
           </div>
         </div>
       )}
@@ -566,14 +567,14 @@ const SculkEcho = ({ isLandscapePhone = false }) => {
           <div style={{
             position: 'absolute',
             right: 'calc(100% + 12px)',
-            border: '1px solid var(--sculk-cyan)',
+            border: '1px solid var(--ancient-cyan)',
             padding: '10px 16px',
             background: 'rgba(2, 4, 6, 0.95)',
-            color: 'var(--sculk-cyan)',
+            color: 'var(--ancient-cyan)',
             fontSize: '13px',
             whiteSpace: 'nowrap',
             pointerEvents: 'none',
-            fontFamily: 'Nunito, sans-serif',
+            fontFamily: 'var(--font-sans)',
             boxShadow: '0 0 10px rgba(0, 252, 240, 0.1)',
             textAlign: 'left',
             lineHeight: '1.6',
@@ -942,22 +943,22 @@ const PortfolioOverlay = ({ experienceMode = 'desktop' }) => {
         <div style={{ position: 'absolute', top: 0, left: 0, width: isMobileLandscape ? '48vw' : '60vw', height: '100vh', background: 'linear-gradient(to right, rgba(2,4,6,0.85) 0%, rgba(2,4,6,0) 100%)', zIndex: -1 }}></div>
         {isMobileLandscape ? (
           <div style={{ maxWidth: 'min(440px, 46vw)' }}>
-            <h1 className="hero-title">{portfolioData.hero.title}</h1>
+            <h1 className="hero-title ui-heading">{portfolioData.hero.title}</h1>
             <h2 className="hero-subtitle">{portfolioData.hero.subtitle}</h2>
-            <p className="hero-desc">{portfolioData.hero.desc}</p>
+            <p className="hero-desc ui-body">{portfolioData.hero.desc}</p>
             <div style={{ display: 'flex', gap: '1.2rem', marginTop: '0.8rem', alignItems: 'center' }}>
-              <span style={{ color: 'var(--sculk-blue)', letterSpacing: '2px', fontSize: '11px' }}>SCROLL TO EXPLORE ↓</span>
-              <a href={portfolioData.hero.resumeUrl} target="_blank" rel="noreferrer" className="cinematic-link" style={{ letterSpacing: '2px', fontSize: '11px', pointerEvents: 'auto', minHeight: '34px', display: 'inline-flex', alignItems: 'center' }}>DOWNLOAD RESUME</a>
+              <span className="ui-meta" style={{ color: 'var(--ancient-cyan)', letterSpacing: '2px', fontSize: '11px', fontWeight: 600 }}>SCROLL TO EXPLORE ↓</span>
+              <a href={portfolioData.hero.resumeUrl} target="_blank" rel="noreferrer" className="cinematic-link ui-link" style={{ letterSpacing: '2px', fontSize: '11px', pointerEvents: 'auto', minHeight: '34px', display: 'inline-flex', alignItems: 'center' }}>DOWNLOAD RESUME</a>
             </div>
           </div>
         ) : (
           <>
-            <h1 className="hero-title">{portfolioData.hero.title}</h1>
+            <h1 className="hero-title ui-heading">{portfolioData.hero.title}</h1>
             <h2 className="hero-subtitle">{portfolioData.hero.subtitle}</h2>
-            <p className="hero-desc">{portfolioData.hero.desc}</p>
+            <p className="hero-desc ui-body">{portfolioData.hero.desc}</p>
             <div style={{ display: 'flex', gap: '2rem', marginTop: '2rem', alignItems: 'center' }}>
-              <span style={{ color: 'var(--sculk-blue)', letterSpacing: '2px', fontSize: '12px' }}>SCROLL TO EXPLORE ↓</span>
-              <a href={portfolioData.hero.resumeUrl} target="_blank" rel="noreferrer" className="cinematic-link" style={{ letterSpacing: '2px', fontSize: '12px', pointerEvents: 'auto' }}>DOWNLOAD RESUME</a>
+              <span className="ui-meta" style={{ color: 'var(--ancient-cyan)', letterSpacing: '2px', fontSize: '12px', fontWeight: 600 }}>SCROLL TO EXPLORE ↓</span>
+              <a href={portfolioData.hero.resumeUrl} target="_blank" rel="noreferrer" className="cinematic-link ui-link" style={{ letterSpacing: '2px', fontSize: '12px', pointerEvents: 'auto' }}>DOWNLOAD RESUME</a>
             </div>
           </>
         )}
@@ -967,15 +968,15 @@ const PortfolioOverlay = ({ experienceMode = 'desktop' }) => {
       <div ref={aboutRef} style={sectionStyle('about', 'right')}>
         {isMobileLandscape ? (
           <div style={{ ...mobileBasePanelStyle, width: 'min(44vw, 480px)', maxWidth: 'min(44vw, 480px)', marginLeft: 'auto', textAlign: 'left' }}>
-            <h2 className="section-label" style={{ fontSize: '12px', letterSpacing: '0.22em', marginBottom: '6px' }}>01 / ABOUT</h2>
-            <h3 style={{ fontSize: '22px', color: '#fff', fontFamily: 'Cinzel, serif', marginBottom: '6px', lineHeight: 1.15 }}>{portfolioData.about.title}</h3>
-            <p className="hero-desc" style={{ fontSize: '13.5px', lineHeight: '1.42', margin: 0, maxWidth: '100%' }}>{portfolioData.about.desc}</p>
+            <h2 className="section-label ui-eyebrow" style={{ fontSize: '12px', letterSpacing: '0.22em', marginBottom: '6px' }}>01 / ABOUT</h2>
+            <h3 className="ui-heading" style={{ fontSize: '22px', color: 'var(--text-primary)', fontFamily: 'var(--font-serif)', marginBottom: '6px', lineHeight: 1.15 }}>{portfolioData.about.title}</h3>
+            <p className="hero-desc ui-body" style={{ fontSize: '13.5px', lineHeight: '1.42', margin: 0, maxWidth: '100%', color: 'var(--text-secondary)' }}>{portfolioData.about.desc}</p>
           </div>
         ) : (
           <div style={{ ...desktopBasePanelStyle, maxWidth: '600px', marginLeft: 'auto', textAlign: 'left' }}>
-            <h2 className="section-label">01 / ABOUT</h2>
-            <h3 style={{ fontSize: '32px', color: '#fff', fontFamily: 'Cinzel, serif', marginBottom: '1rem' }}>{portfolioData.about.title}</h3>
-            <p className="hero-desc" style={{ fontSize: '16px', lineHeight: '1.6' }}>{portfolioData.about.desc}</p>
+            <h2 className="section-label ui-eyebrow">01 / ABOUT</h2>
+            <h3 className="ui-heading" style={{ fontSize: '32px', color: 'var(--text-primary)', fontFamily: 'var(--font-serif)', marginBottom: '1rem' }}>{portfolioData.about.title}</h3>
+            <p className="hero-desc ui-body" style={{ fontSize: '16px', lineHeight: '1.6', color: 'var(--text-secondary)' }}>{portfolioData.about.desc}</p>
           </div>
         )}
       </div>
@@ -994,27 +995,27 @@ const PortfolioOverlay = ({ experienceMode = 'desktop' }) => {
             className="responsive-card-scroll"
             onTouchMove={e => e.stopPropagation()}
           >
-            <h2 className="section-label" style={{ fontSize: '13px', letterSpacing: '0.22em', marginBottom: '8px' }}>02 / ANCIENT ARCHIVES</h2>
+            <h2 className="section-label ui-eyebrow" style={{ fontSize: '13px', letterSpacing: '0.22em', marginBottom: '8px' }}>02 / ANCIENT ARCHIVES</h2>
             {portfolioData.experience.map((exp, i) => (
               <div key={i} style={{ marginTop: i > 0 ? '18px' : '4px' }}>
-                <h3 style={{ fontSize: '19px', color: '#fff', fontFamily: 'Cinzel, serif', textTransform: 'uppercase', marginBottom: '4px', lineHeight: 1.2 }}>{exp.title}</h3>
-                <p style={{ color: 'var(--sculk-cyan)', letterSpacing: '2px', fontSize: '14px', textTransform: 'uppercase', marginBottom: '6px' }}>{exp.company}</p>
-                <p style={{ color: 'var(--sculk-blue)', fontSize: '12px', letterSpacing: '1px', marginBottom: '10px' }}>{exp.date}</p>
-                <p style={{ color: '#c0cdd1', fontSize: '13.5px', lineHeight: '1.4', marginBottom: '8px' }}>{exp.desc}</p>
-                <p style={{ color: 'var(--sculk-cyan)', fontSize: '12px', letterSpacing: '2px', margin: 0 }}>{exp.tech}</p>
+                <h3 className="ui-heading" style={{ fontSize: '19px', color: 'var(--text-primary)', fontFamily: 'var(--font-serif)', textTransform: 'uppercase', marginBottom: '4px', lineHeight: 1.2 }}>{exp.title}</h3>
+                <p className="ui-company" style={{ color: 'var(--ancient-cyan)', letterSpacing: '2px', fontSize: '14px', textTransform: 'uppercase', marginBottom: '6px', fontWeight: 700 }}>{exp.company}</p>
+                <p className="ui-date" style={{ color: 'var(--ancient-cyan-muted)', fontSize: '12px', letterSpacing: '1px', marginBottom: '10px', fontWeight: 500 }}>{exp.date}</p>
+                <p className="ui-body" style={{ color: 'var(--text-secondary)', fontSize: '13.5px', lineHeight: '1.4', marginBottom: '8px' }}>{exp.desc}</p>
+                <p className="ui-tech" style={{ color: 'var(--ancient-cyan)', fontSize: '12px', letterSpacing: '2px', margin: 0, fontWeight: 600 }}>{exp.tech}</p>
               </div>
             ))}
           </div>
         ) : (
           <div style={{ ...desktopBasePanelStyle, maxWidth: '700px' }}>
-            <h2 className="section-label">02 / ANCIENT ARCHIVES</h2>
+            <h2 className="section-label ui-eyebrow">02 / ANCIENT ARCHIVES</h2>
             {portfolioData.experience.map((exp, i) => (
               <div key={i} style={{ marginTop: i > 0 ? '2rem' : '1rem' }}>
-                <h3 style={{ fontSize: '24px', color: '#fff', fontFamily: 'Cinzel, serif', textTransform: 'uppercase' }}>{exp.title}</h3>
-                <p style={{ color: 'var(--sculk-cyan)', letterSpacing: '2px', fontSize: '14px', textTransform: 'uppercase', marginBottom: '0.5rem' }}>{exp.company}</p>
-                <p style={{ color: 'var(--sculk-blue)', fontSize: '12px', letterSpacing: '1px' }}>{exp.date}</p>
-                <p style={{ marginTop: '0.5rem', color: '#c0cdd1', fontSize: '15px', lineHeight: '1.7' }}>{exp.desc}</p>
-                <p style={{ marginTop: '0.5rem', color: 'var(--sculk-cyan)', fontSize: '12px', letterSpacing: '2px' }}>{exp.tech}</p>
+                <h3 className="ui-heading" style={{ fontSize: '24px', color: 'var(--text-primary)', fontFamily: 'var(--font-serif)', textTransform: 'uppercase' }}>{exp.title}</h3>
+                <p className="ui-company" style={{ color: 'var(--ancient-cyan)', letterSpacing: '2px', fontSize: '14px', textTransform: 'uppercase', marginBottom: '0.5rem', fontWeight: 700 }}>{exp.company}</p>
+                <p className="ui-date" style={{ color: 'var(--ancient-cyan-muted)', fontSize: '12px', letterSpacing: '1px', fontWeight: 500, marginBottom: '0.5rem' }}>{exp.date}</p>
+                <p className="ui-body" style={{ marginTop: '0.5rem', color: 'var(--text-secondary)', fontSize: '15px', lineHeight: '1.7' }}>{exp.desc}</p>
+                <p className="ui-tech" style={{ marginTop: '0.5rem', color: 'var(--ancient-cyan)', fontSize: '12px', letterSpacing: '2px', fontWeight: 600 }}>{exp.tech}</p>
               </div>
             ))}
           </div>
@@ -1025,18 +1026,18 @@ const PortfolioOverlay = ({ experienceMode = 'desktop' }) => {
       <div ref={skillsRef} style={sectionStyle('skills', 'center')}>
         {isMobileLandscape ? (
           <div style={{ ...mobileBasePanelStyle, width: 'min(62vw, 580px)', maxWidth: 'min(62vw, 580px)', margin: '0 auto' }}>
-            <h2 className="section-label" style={{ fontSize: '13px', letterSpacing: '0.22em', marginBottom: '10px' }}>03 / SCULK NETWORK</h2>
+            <h2 className="section-label ui-eyebrow" style={{ fontSize: '13px', letterSpacing: '0.22em', marginBottom: '10px' }}>03 / SCULK NETWORK</h2>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 10px', justifyContent: 'center', marginTop: '6px' }}>
               {portfolioData.skills.map((skill, i) => (
                 <span key={i} style={{ 
                   height: '34px',
                   minHeight: '34px',
                   padding: '0 12px', 
-                  color: '#fff', 
+                  color: 'var(--text-primary)', 
                   letterSpacing: '1.5px', 
                   fontSize: '12px', 
-                  textShadow: '0 0 10px var(--sculk-cyan)', 
-                  border: '1px solid rgba(0,252,240,0.2)', 
+                  textShadow: '0 0 10px var(--ancient-cyan)', 
+                  border: '1px solid rgba(0,252,240,0.25)', 
                   borderRadius: '4px',
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -1048,10 +1049,10 @@ const PortfolioOverlay = ({ experienceMode = 'desktop' }) => {
           </div>
         ) : (
           <div style={{ ...desktopBasePanelStyle, maxWidth: '800px', margin: '0 auto' }}>
-            <h2 className="section-label">03 / SCULK NETWORK</h2>
+            <h2 className="section-label ui-eyebrow">03 / SCULK NETWORK</h2>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.5rem', justifyContent: 'center', marginTop: '2rem' }}>
               {portfolioData.skills.map((skill, i) => (
-                <span key={i} style={{ padding: '0.4rem 1rem', color: '#fff', letterSpacing: '2px', fontSize: '16px', textShadow: '0 0 10px var(--sculk-cyan)', border: '1px solid rgba(0,252,240,0.2)', borderRadius: '2px' }}>{skill}</span>
+                <span key={i} style={{ padding: '0.4rem 1rem', color: 'var(--text-primary)', letterSpacing: '2px', fontSize: '16px', textShadow: '0 0 10px var(--ancient-cyan)', border: '1px solid rgba(0,252,240,0.25)', borderRadius: '2px' }}>{skill}</span>
               ))}
             </div>
           </div>
@@ -1060,7 +1061,7 @@ const PortfolioOverlay = ({ experienceMode = 'desktop' }) => {
 
       {/* PROJECTS — 60 to 77% */}
       <div ref={projectsRef} style={sectionStyle('projects', 'center')}>
-        <h2 className="section-label" style={{ 
+        <h2 className="section-label ui-eyebrow" style={{ 
           fontSize: isMobileLandscape ? '13px' : undefined, 
           letterSpacing: isMobileLandscape ? '0.22em' : undefined, 
           marginTop: isMobileLandscape ? '12px' : undefined,
@@ -1084,22 +1085,22 @@ const PortfolioOverlay = ({ experienceMode = 'desktop' }) => {
               className="responsive-card-scroll"
               onTouchMove={e => e.stopPropagation()}
             >
-              <h3 style={{ fontSize: '19px', color: '#fff', fontFamily: 'Cinzel, serif', textTransform: 'uppercase', marginBottom: '4px', lineHeight: 1.2 }}>{proj.title}</h3>
-              <p style={{ margin: '4px 0', color: '#c0cdd1', fontSize: '13.5px', lineHeight: '1.4' }}>{proj.desc}</p>
-              <p style={{ fontSize: '11.5px', color: 'var(--sculk-cyan)', letterSpacing: '2px', margin: '4px 0 8px' }}>{proj.tech}</p>
+              <h3 className="ui-heading" style={{ fontSize: '19px', color: 'var(--text-primary)', fontFamily: 'var(--font-serif)', textTransform: 'uppercase', marginBottom: '4px', lineHeight: 1.2 }}>{proj.title}</h3>
+              <p className="ui-body" style={{ margin: '4px 0', color: 'var(--text-secondary)', fontSize: '13.5px', lineHeight: '1.4' }}>{proj.desc}</p>
+              <p className="ui-tech" style={{ fontSize: '11.5px', color: 'var(--ancient-cyan)', letterSpacing: '2px', margin: '4px 0 8px', fontWeight: 600 }}>{proj.tech}</p>
               <div style={{ display: 'flex', gap: '1.2rem' }}>
-                <a href={proj.link} className="cinematic-link" style={{ fontSize: '12px', letterSpacing: '1px', minHeight: '32px', display: 'inline-flex', alignItems: 'center' }}>VIEW PROJECT →</a>
-                <a href={proj.source} className="cinematic-link" style={{ fontSize: '12px', letterSpacing: '1px', minHeight: '32px', display: 'inline-flex', alignItems: 'center' }}>VIEW SOURCE →</a>
+                <a href={proj.link} className="cinematic-link ui-link" style={{ fontSize: '12px', letterSpacing: '1px', minHeight: '32px', display: 'inline-flex', alignItems: 'center' }}>VIEW PROJECT →</a>
+                <a href={proj.source} className="cinematic-link ui-link" style={{ fontSize: '12px', letterSpacing: '1px', minHeight: '32px', display: 'inline-flex', alignItems: 'center' }}>VIEW SOURCE →</a>
               </div>
             </div>
           ) : (
             <div key={i} style={{ ...desktopBasePanelStyle, marginTop: i > 0 ? '2.5rem' : '0', textAlign: 'left', maxWidth: '600px', alignSelf: i % 2 === 0 ? 'flex-end' : 'flex-start' }}>
-              <h3 style={{ fontSize: '28px', color: '#fff', fontFamily: 'Cinzel, serif', textTransform: 'uppercase' }}>{proj.title}</h3>
-              <p style={{ margin: '0.5rem 0', color: '#c0cdd1', fontSize: '15px', lineHeight: '1.7' }}>{proj.desc}</p>
-              <p style={{ fontSize: '12px', color: 'var(--sculk-cyan)', letterSpacing: '2px', marginBottom: '1rem' }}>{proj.tech}</p>
+              <h3 className="ui-heading" style={{ fontSize: '28px', color: 'var(--text-primary)', fontFamily: 'var(--font-serif)', textTransform: 'uppercase' }}>{proj.title}</h3>
+              <p className="ui-body" style={{ margin: '0.5rem 0', color: 'var(--text-secondary)', fontSize: '15px', lineHeight: '1.7' }}>{proj.desc}</p>
+              <p className="ui-tech" style={{ fontSize: '12px', color: 'var(--ancient-cyan)', letterSpacing: '2px', marginBottom: '1rem', fontWeight: 600 }}>{proj.tech}</p>
               <div style={{ display: 'flex', gap: '2rem' }}>
-                <a href={proj.link} className="cinematic-link" style={{ fontSize: '13px', letterSpacing: '1px' }}>VIEW PROJECT →</a>
-                <a href={proj.source} className="cinematic-link" style={{ fontSize: '13px', letterSpacing: '1px' }}>VIEW SOURCE →</a>
+                <a href={proj.link} className="cinematic-link ui-link" style={{ fontSize: '13px', letterSpacing: '1px' }}>VIEW PROJECT →</a>
+                <a href={proj.source} className="cinematic-link ui-link" style={{ fontSize: '13px', letterSpacing: '1px' }}>VIEW SOURCE →</a>
               </div>
             </div>
           )
@@ -1122,15 +1123,15 @@ const PortfolioOverlay = ({ experienceMode = 'desktop' }) => {
             className="responsive-card-scroll"
             onTouchMove={e => e.stopPropagation()}
           >
-            <h2 className="section-label" style={{ 
+            <h2 className="section-label ui-eyebrow" style={{ 
               fontSize: '12px', 
               letterSpacing: '0.22em', 
               marginBottom: '6px' 
             }}>05 / TRANSMIT</h2>
-            <h3 style={{ 
+            <h3 className="ui-heading" style={{ 
               fontSize: 'clamp(26px, 4.2vw, 36px)', 
-              color: '#fff', 
-              fontFamily: 'Cinzel, serif', 
+              color: 'var(--text-primary)', 
+              fontFamily: 'var(--font-serif)', 
               lineHeight: '0.98', 
               marginBottom: '8px' 
             }}>LET'S BUILD<br />SOMETHING.</h3>
@@ -1155,10 +1156,11 @@ const PortfolioOverlay = ({ experienceMode = 'desktop' }) => {
                 onBlur={() => { setIsKeyboardActive(false); }}
                 style={{
                   background: 'rgba(0,0,0,0.28)',
-                  border: '1px solid rgba(0,252,240,0.2)',
+                  border: '1px solid rgba(0,252,240,0.25)',
                   padding: '6px 12px',
                   fontSize: '13.5px',
-                  color: '#fff',
+                  color: 'var(--text-primary)',
+                  fontFamily: 'var(--font-sans)',
                   borderRadius: '2px',
                   outline: 'none',
                   height: '38px',
@@ -1175,10 +1177,11 @@ const PortfolioOverlay = ({ experienceMode = 'desktop' }) => {
                 onBlur={() => { setIsKeyboardActive(false); }}
                 style={{
                   background: 'rgba(0,0,0,0.28)',
-                  border: '1px solid rgba(0,252,240,0.2)',
+                  border: '1px solid rgba(0,252,240,0.25)',
                   padding: '6px 12px',
                   fontSize: '13.5px',
-                  color: '#fff',
+                  color: 'var(--text-primary)',
+                  fontFamily: 'var(--font-sans)',
                   borderRadius: '2px',
                   outline: 'none',
                   height: '38px',
@@ -1194,10 +1197,11 @@ const PortfolioOverlay = ({ experienceMode = 'desktop' }) => {
                 onBlur={() => { setIsKeyboardActive(false); }}
                 style={{
                   background: 'rgba(0,0,0,0.28)',
-                  border: '1px solid rgba(0,252,240,0.2)',
+                  border: '1px solid rgba(0,252,240,0.25)',
                   padding: '6px 12px',
                   fontSize: '13.5px',
-                  color: '#fff',
+                  color: 'var(--text-primary)',
+                  fontFamily: 'var(--font-sans)',
                   borderRadius: '2px',
                   outline: 'none',
                   resize: 'none',
@@ -1210,25 +1214,27 @@ const PortfolioOverlay = ({ experienceMode = 'desktop' }) => {
                 type="submit"
                 disabled={formFeedback.state === 'submitting'}
                 style={{
-                  background: formFeedback.state === 'success' ? 'rgba(0,255,136,0.1)' : 'transparent',
+                  background: formFeedback.state === 'success' ? 'rgba(0,255,136,0.1)' : 'rgba(0, 252, 240, 0.08)',
                   border: `1px solid ${
                     formFeedback.state === 'success'
                       ? '#00ff88'
                       : formFeedback.state === 'error'
                       ? '#ff4b4b'
-                      : 'var(--sculk-cyan)'
+                      : 'var(--ancient-cyan)'
                   }`,
                   color:
                     formFeedback.state === 'success'
                       ? '#00ff88'
                       : formFeedback.state === 'error'
                       ? '#ff4b4b'
-                      : 'var(--sculk-cyan)',
+                      : 'var(--ancient-cyan)',
                   padding: '0',
                   height: '40px',
                   minHeight: '40px',
                   letterSpacing: '2px',
                   fontSize: '13px',
+                  fontFamily: 'var(--font-serif)',
+                  fontWeight: 700,
                   cursor: formFeedback.state === 'submitting' ? 'wait' : 'pointer',
                   transition: 'all 0.3s ease',
                   boxSizing: 'border-box'
@@ -1253,7 +1259,7 @@ const PortfolioOverlay = ({ experienceMode = 'desktop' }) => {
                         ? '#00ff88'
                         : formFeedback.state === 'error'
                         ? '#ff4b4b'
-                        : '#00e5ff',
+                        : 'var(--ancient-cyan)',
                     letterSpacing: '0.5px'
                   }}
                 >
@@ -1263,15 +1269,15 @@ const PortfolioOverlay = ({ experienceMode = 'desktop' }) => {
             </form>
 
             <div style={{ display: 'flex', gap: '22px', marginTop: '12px', justifyContent: 'flex-start' }}>
-              <a href={`mailto:${portfolioData.contact.email}`} className="cinematic-link" style={{ fontSize: '11.5px', letterSpacing: '2px', minHeight: '30px', display: 'inline-flex', alignItems: 'center' }}>EMAIL</a>
-              <a href={portfolioData.contact.github} className="cinematic-link" style={{ fontSize: '11.5px', letterSpacing: '2px', minHeight: '30px', display: 'inline-flex', alignItems: 'center' }}>GITHUB</a>
-              <a href={portfolioData.contact.linkedin} className="cinematic-link" style={{ fontSize: '11.5px', letterSpacing: '2px', minHeight: '30px', display: 'inline-flex', alignItems: 'center' }}>LINKEDIN</a>
+              <a href={`mailto:${portfolioData.contact.email}`} className="cinematic-link ui-link" style={{ fontSize: '11.5px', letterSpacing: '2px', minHeight: '30px', display: 'inline-flex', alignItems: 'center' }}>EMAIL</a>
+              <a href={portfolioData.contact.github} className="cinematic-link ui-link" style={{ fontSize: '11.5px', letterSpacing: '2px', minHeight: '30px', display: 'inline-flex', alignItems: 'center' }}>GITHUB</a>
+              <a href={portfolioData.contact.linkedin} className="cinematic-link ui-link" style={{ fontSize: '11.5px', letterSpacing: '2px', minHeight: '30px', display: 'inline-flex', alignItems: 'center' }}>LINKEDIN</a>
             </div>
           </div>
         ) : (
           <div style={{ ...desktopTransmitPanelStyle, width: 'min(540px, calc(100vw - 48px))', marginLeft: 'auto', textAlign: 'left' }}>
-            <h2 className="section-label">05 / TRANSMIT</h2>
-            <h3 style={{ fontSize: 'clamp(44px, 3.2vw, 58px)', color: '#fff', fontFamily: 'Cinzel, serif', lineHeight: '1.0', marginBottom: '2rem' }}>LET'S BUILD<br />SOMETHING.</h3>
+            <h2 className="section-label ui-eyebrow">05 / TRANSMIT</h2>
+            <h3 className="ui-heading" style={{ fontSize: 'clamp(44px, 3.2vw, 58px)', color: 'var(--text-primary)', fontFamily: 'var(--font-serif)', lineHeight: '1.0', marginBottom: '2rem' }}>LET'S BUILD<br />SOMETHING.</h3>
 
             {/* Original Desktop Contact Form from 2cb7a83 */}
             <form
@@ -1285,10 +1291,11 @@ const PortfolioOverlay = ({ experienceMode = 'desktop' }) => {
                 placeholder="NAME"
                 style={{
                   background: 'rgba(0,0,0,0.28)',
-                  border: '1px solid rgba(0,252,240,0.2)',
+                  border: '1px solid rgba(0,252,240,0.25)',
                   padding: '16px',
                   fontSize: '15px',
-                  color: '#fff',
+                  color: 'var(--text-primary)',
+                  fontFamily: 'var(--font-sans)',
                   borderRadius: '2px',
                   outline: 'none',
                   height: '56px',
@@ -1302,10 +1309,11 @@ const PortfolioOverlay = ({ experienceMode = 'desktop' }) => {
                 placeholder="EMAIL"
                 style={{
                   background: 'rgba(0,0,0,0.28)',
-                  border: '1px solid rgba(0,252,240,0.2)',
+                  border: '1px solid rgba(0,252,240,0.25)',
                   padding: '16px',
                   fontSize: '15px',
-                  color: '#fff',
+                  color: 'var(--text-primary)',
+                  fontFamily: 'var(--font-sans)',
                   borderRadius: '2px',
                   outline: 'none',
                   height: '56px',
@@ -1318,10 +1326,11 @@ const PortfolioOverlay = ({ experienceMode = 'desktop' }) => {
                 placeholder="MESSAGE"
                 style={{
                   background: 'rgba(0,0,0,0.28)',
-                  border: '1px solid rgba(0,252,240,0.2)',
+                  border: '1px solid rgba(0,252,240,0.25)',
                   padding: '16px',
                   fontSize: '15px',
-                  color: '#fff',
+                  color: 'var(--text-primary)',
+                  fontFamily: 'var(--font-sans)',
                   borderRadius: '2px',
                   outline: 'none',
                   resize: 'none',
@@ -1333,24 +1342,26 @@ const PortfolioOverlay = ({ experienceMode = 'desktop' }) => {
                 type="submit"
                 disabled={formFeedback.state === 'submitting'}
                 style={{
-                  background: formFeedback.state === 'success' ? 'rgba(0,255,136,0.1)' : 'transparent',
+                  background: formFeedback.state === 'success' ? 'rgba(0,255,136,0.1)' : 'rgba(0, 252, 240, 0.08)',
                   border: `1px solid ${
                     formFeedback.state === 'success'
                       ? '#00ff88'
                       : formFeedback.state === 'error'
                       ? '#ff4b4b'
-                      : 'var(--sculk-cyan)'
+                      : 'var(--ancient-cyan)'
                   }`,
                   color:
                     formFeedback.state === 'success'
                       ? '#00ff88'
                       : formFeedback.state === 'error'
                       ? '#ff4b4b'
-                      : 'var(--sculk-cyan)',
+                      : 'var(--ancient-cyan)',
                   padding: '0',
                   height: '56px',
                   letterSpacing: '2px',
                   fontSize: '15px',
+                  fontFamily: 'var(--font-serif)',
+                  fontWeight: 700,
                   cursor: formFeedback.state === 'submitting' ? 'wait' : 'pointer',
                   transition: 'all 0.3s ease',
                   boxSizing: 'border-box'
@@ -1375,7 +1386,7 @@ const PortfolioOverlay = ({ experienceMode = 'desktop' }) => {
                         ? '#00ff88'
                         : formFeedback.state === 'error'
                         ? '#ff4b4b'
-                        : '#00e5ff',
+                        : 'var(--ancient-cyan)',
                     letterSpacing: '0.5px'
                   }}
                 >
@@ -1385,9 +1396,9 @@ const PortfolioOverlay = ({ experienceMode = 'desktop' }) => {
             </form>
 
             <div style={{ display: 'flex', gap: '2rem', justifyContent: 'flex-start' }}>
-              <a href={`mailto:${portfolioData.contact.email}`} className="cinematic-link" style={{ fontSize: '14px', letterSpacing: '2px' }}>EMAIL</a>
-              <a href={portfolioData.contact.github} className="cinematic-link" style={{ fontSize: '14px', letterSpacing: '2px' }}>GITHUB</a>
-              <a href={portfolioData.contact.linkedin} className="cinematic-link" style={{ fontSize: '14px', letterSpacing: '2px' }}>LINKEDIN</a>
+              <a href={`mailto:${portfolioData.contact.email}`} className="cinematic-link ui-link" style={{ fontSize: '14px', letterSpacing: '2px' }}>EMAIL</a>
+              <a href={portfolioData.contact.github} className="cinematic-link ui-link" style={{ fontSize: '14px', letterSpacing: '2px' }}>GITHUB</a>
+              <a href={portfolioData.contact.linkedin} className="cinematic-link ui-link" style={{ fontSize: '14px', letterSpacing: '2px' }}>LINKEDIN</a>
             </div>
           </div>
         )}

@@ -1,13 +1,40 @@
 /* Ancient City Immersive Portfolio CSS */
 
 :root {
-  --sculk-cyan: #00fcf0;
-  --sculk-blue: #00A89A;
+  /* ============================================================
+     GLOBAL COLOR SYSTEM (Ancient City Design System)
+     Unified across Desktop, Tablet Landscape, and Mobile Landscape
+     ============================================================ */
+  --deep-bg: #010203;
+  --panel-bg: rgba(2, 8, 10, 0.72);
+  --panel-bg-transmit: rgba(2, 9, 11, 0.78);
+  --panel-border: rgba(0, 220, 210, 0.18);
+  --panel-border-focus: rgba(0, 252, 240, 0.45);
+
+  /* Primary Ancient City Sculk Cyan - crisp, clear, slightly greenish, moderately luminous */
+  --ancient-cyan: #00fcf0;
+  --ancient-cyan-bright: #73fff9;
+  --ancient-cyan-hover: #73fff9;
+  --ancient-cyan-muted: #2ecdc4; /* restrained cyan for dates & secondary metadata with strong contrast */
+  --ancient-cyan-glow: rgba(0, 252, 240, 0.25);
+
+  /* Semantic Color Aliases */
+  --sculk-cyan: var(--ancient-cyan);
+  --sculk-blue: var(--ancient-cyan-muted);
   --deepslate: #050b14;
-  --ancient-text: #e0f2f5;
-  --ancient-text-dim: #8faeb3;
+
+  /* Typography Colors */
+  --text-primary: #ffffff;
+  --text-secondary: #c5d4d8; /* clear, soft grey descriptions across all devices */
+  --ancient-text: var(--text-primary);
+  --ancient-text-dim: var(--text-secondary);
+
   --glass-bg: rgba(5, 11, 20, 0.4);
-  --glass-border: rgba(0, 168, 154, 0.2);
+  --glass-border: rgba(0, 220, 210, 0.25);
+
+  /* Global Font Families */
+  --font-serif: 'Cinzel', serif;
+  --font-sans: 'Nunito', sans-serif;
 }
 
 body, html {
@@ -58,10 +85,11 @@ h1, h2, h3 {
 }
 
 .nav-brand {
-  font-family: 'Cinzel', serif;
+  font-family: var(--font-serif);
+  font-weight: 700;
   font-size: 1.2rem;
   letter-spacing: 2px;
-  color: var(--sculk-cyan);
+  color: var(--ancient-cyan);
   text-shadow: 0 0 10px rgba(0, 252, 240, 0.3);
 }
 
@@ -70,18 +98,26 @@ h1, h2, h3 {
   gap: 2rem;
 }
 
+.nav-links span,
 .nav-links a {
-  color: var(--ancient-text-dim);
+  color: var(--ancient-cyan);
+  opacity: 0.92;
   text-decoration: none;
+  font-family: var(--font-sans);
+  font-weight: 600;
   font-size: 0.9rem;
-  letter-spacing: 1px;
+  letter-spacing: 2px;
   text-transform: uppercase;
-  transition: all 0.3s ease;
+  transition: all 0.25s ease;
+  cursor: pointer;
+  user-select: none;
 }
 
+.nav-links span:hover,
 .nav-links a:hover {
-  color: var(--sculk-cyan);
-  text-shadow: 0 0 8px var(--sculk-blue);
+  color: var(--ancient-cyan-bright);
+  opacity: 1;
+  text-shadow: 0 0 10px rgba(0, 252, 240, 0.45);
 }
 
 /* Scroll Indicator */
@@ -99,7 +135,7 @@ h1, h2, h3 {
 .sculk-line {
   width: 2px;
   height: 40px;
-  background: linear-gradient(to bottom, var(--sculk-cyan), transparent);
+  background: linear-gradient(to bottom, var(--ancient-cyan), transparent);
   animation: pulseLine 2s infinite;
 }
 
@@ -108,7 +144,9 @@ h1, h2, h3 {
   text-transform: uppercase;
   font-size: 0.7rem;
   letter-spacing: 3px;
-  color: var(--ancient-text-dim);
+  color: var(--ancient-cyan-muted);
+  font-family: var(--font-sans);
+  font-weight: 600;
 }
 
 @keyframes pulseLine {
@@ -139,11 +177,15 @@ h1, h2, h3 {
 }
 
 .section-label {
-  font-size: 0.8rem;
+  font-family: var(--font-serif);
+  font-weight: 700;
+  font-size: 14px;
   letter-spacing: 4px;
-  color: var(--sculk-blue);
+  color: var(--ancient-cyan) !important;
+  text-transform: uppercase;
   margin-bottom: 2rem;
-  opacity: 0.8;
+  opacity: 1 !important;
+  text-shadow: 0 0 10px var(--ancient-cyan-glow);
 }
 
 /* Hero Section */
@@ -157,15 +199,16 @@ h1, h2, h3 {
 }
 .hero-title {
   font-size: 88px;
-  color: #ffffff;
+  color: var(--text-primary);
   letter-spacing: 4px;
   line-height: 1.1;
   text-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
-  font-family: 'Cinzel', serif;
+  font-family: var(--font-serif);
+  font-weight: 700;
 }
 .hero-subtitle {
   font-size: 24px;
-  color: var(--sculk-cyan);
+  color: var(--ancient-cyan);
   margin-top: 1.5rem;
   font-weight: 400;
   letter-spacing: 2px;
@@ -174,10 +217,11 @@ h1, h2, h3 {
 .hero-desc {
   margin-top: 2rem;
   font-size: 18px;
-  color: #c0cdd1;
+  color: var(--text-secondary);
   line-height: 1.8;
   max-width: 500px;
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+  font-family: var(--font-sans);
 }
 
 /* Experience */
@@ -190,36 +234,31 @@ h1, h2, h3 {
   max-width: 500px;
   text-align: right;
 }
-.section-label {
-  font-size: 14px;
-  color: var(--sculk-cyan);
-  letter-spacing: 4px;
-  margin-bottom: 1rem;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
-}
 .experience-item h3 {
   font-size: 32px;
-  color: #ffffff;
-  font-family: 'Cinzel', serif;
+  color: var(--text-primary);
+  font-family: var(--font-serif);
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
 }
 .experience-item .highlight {
-  color: var(--sculk-cyan);
+  color: var(--ancient-cyan);
 }
 .experience-item .date {
   font-size: 14px;
-  color: var(--sculk-blue);
+  color: var(--ancient-cyan-muted);
   margin-top: 0.5rem;
   letter-spacing: 1px;
+  font-family: var(--font-sans);
+  font-weight: 500;
 }
 .experience-item .desc {
   margin-top: 1.5rem;
   font-size: 18px;
-  color: #c0cdd1;
+  color: var(--text-secondary);
   line-height: 1.8;
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+  font-family: var(--font-sans);
 }
-
 /* Projects */
 .projects-section {
   justify-content: center;
@@ -239,14 +278,17 @@ h1, h2, h3 {
 }
 .project-item h3 {
   font-size: 48px;
-  color: #ffffff;
-  font-family: 'Cinzel', serif;
+  color: var(--text-primary);
+  font-family: var(--font-serif);
+  font-weight: 700;
   text-shadow: 0 4px 15px rgba(0, 0, 0, 0.8);
 }
 .project-item .tech {
   font-size: 14px;
-  color: var(--sculk-cyan);
-  letter-spacing: 3px;
+  color: var(--ancient-cyan);
+  font-family: var(--font-sans);
+  font-weight: 600;
+  letter-spacing: 2px;
   text-transform: uppercase;
   margin-top: 1rem;
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
@@ -255,13 +297,14 @@ h1, h2, h3 {
   margin: 1.5rem 0;
   line-height: 1.8;
   font-size: 18px;
-  color: #c0cdd1;
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
 }
 .project-links a {
   font-size: 0.9rem;
-  color: var(--sculk-cyan);
-  border-bottom: 1px solid var(--sculk-cyan);
+  color: var(--ancient-cyan);
+  border-bottom: 1px solid var(--ancient-cyan);
   padding-bottom: 0.2rem;
   transition: opacity 0.2s;
 }
@@ -289,27 +332,27 @@ h1, h2, h3 {
   border: none;
   border-bottom: 1px solid var(--glass-border);
   padding: 1rem;
-  color: var(--ancient-text);
-  font-family: 'Nunito', sans-serif;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
   transition: border-color 0.3s;
 }
 .minimal-input:focus {
   outline: none;
-  border-color: var(--sculk-cyan);
+  border-color: var(--ancient-cyan);
 }
 .sculk-btn {
-  background: rgba(0, 168, 154, 0.1);
-  border: 1px solid var(--sculk-cyan);
-  color: var(--sculk-cyan);
+  background: rgba(0, 252, 240, 0.08);
+  border: 1px solid var(--ancient-cyan);
+  color: var(--ancient-cyan);
   padding: 1rem;
-  font-family: 'Cinzel', serif;
+  font-family: var(--font-serif);
   font-weight: 700;
   letter-spacing: 2px;
   cursor: pointer;
   transition: all 0.3s;
 }
 .sculk-btn:hover {
-  background: var(--sculk-cyan);
+  background: var(--ancient-cyan);
   color: #000;
   box-shadow: 0 0 20px rgba(0, 252, 240, 0.4);
 }
@@ -317,7 +360,7 @@ h1, h2, h3 {
 .form-status {
   margin-top: 1rem;
   font-size: 0.9rem;
-  color: var(--sculk-cyan);
+  color: var(--ancient-cyan);
 }
 
 /* Footer */
@@ -326,7 +369,7 @@ h1, h2, h3 {
   bottom: 2rem;
   width: 100%;
   text-align: center;
-  color: var(--ancient-text-dim);
+  color: var(--text-secondary);
   font-size: 0.8rem;
   letter-spacing: 1px;
 }
@@ -356,8 +399,8 @@ h1, h2, h3 {
   background: var(--glass-bg);
   padding: 0.5rem 1rem;
   font-size: 0.8rem;
-  color: var(--sculk-cyan);
-  border: 1px solid var(--sculk-cyan);
+  color: var(--ancient-cyan);
+  border: 1px solid var(--ancient-cyan);
   white-space: nowrap;
   pointer-events: none;
 }
@@ -376,8 +419,8 @@ h1, h2, h3 {
   display: flex;
   justify-content: space-between;
   margin-bottom: 1rem;
-  color: var(--sculk-cyan);
-  font-family: 'Cinzel', serif;
+  color: var(--ancient-cyan);
+  font-family: var(--font-serif);
 }
 .close-chat-btn {
   background: transparent;
@@ -389,9 +432,9 @@ h1, h2, h3 {
 .chat-bubble {
   margin-bottom: 0.5rem;
   font-size: 0.9rem;
-  color: var(--ancient-text);
+  color: var(--text-primary);
 }
-.chat-bubble.paimon { color: var(--sculk-cyan); }
+.chat-bubble.paimon { color: var(--ancient-cyan); }
 .chat-footer {
   display: flex;
   gap: 0.5rem;
@@ -405,41 +448,136 @@ h1, h2, h3 {
   padding: 0.5rem;
 }
 .chat-send-btn {
-  background: var(--sculk-cyan);
+  background: var(--ancient-cyan);
   border: none;
   cursor: pointer;
   padding: 0 1rem;
 }
 
+/* ============================================================
+   GLOBAL SEMANTIC TYPOGRAPHY CLASSES
+   Shared across all viewports for consistent brand identity
+   ============================================================ */
+.ui-brand {
+  font-family: var(--font-serif);
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--ancient-cyan);
+  text-shadow: 0 0 12px var(--ancient-cyan-glow);
+}
+
+.ui-nav {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--ancient-cyan);
+  opacity: 0.92;
+  transition: all 0.25s ease;
+  cursor: pointer;
+  user-select: none;
+}
+
+.ui-nav:hover {
+  color: var(--ancient-cyan-bright);
+  opacity: 1;
+  text-shadow: 0 0 10px rgba(0, 252, 240, 0.45);
+}
+
+.ui-eyebrow {
+  font-family: var(--font-serif);
+  font-weight: 700;
+  color: var(--ancient-cyan) !important;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  opacity: 1 !important;
+  text-shadow: 0 0 10px var(--ancient-cyan-glow);
+}
+
+.ui-heading {
+  font-family: var(--font-serif);
+  font-weight: 700;
+  color: var(--text-primary);
+  text-transform: uppercase;
+}
+
+.ui-company {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  color: var(--ancient-cyan);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.ui-date {
+  font-family: var(--font-sans);
+  font-weight: 500;
+  color: var(--ancient-cyan-muted);
+  letter-spacing: 1px;
+}
+
+.ui-body {
+  font-family: var(--font-sans);
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+
+.ui-tech {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  color: var(--ancient-cyan);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.ui-meta {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  color: var(--ancient-cyan);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
 
 /* Cinematic Link Interaction */
-.cinematic-link {
+.cinematic-link,
+.ui-link {
   position: relative;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
   text-decoration: none !important;
-  color: var(--sculk-blue) !important;
+  color: var(--ancient-cyan) !important;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
   transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), color 0.3s ease;
 }
 
-.cinematic-link:hover {
+.cinematic-link:hover,
+.ui-link:hover {
   transform: translateX(2px);
-  color: var(--sculk-cyan) !important;
+  color: var(--ancient-cyan-bright) !important;
+  text-shadow: 0 0 10px rgba(0, 252, 240, 0.45);
 }
 
-.cinematic-link::after {
+.cinematic-link::after,
+.ui-link::after {
   content: '';
   position: absolute;
   width: 0%;
   height: 1px;
   bottom: -2px;
   left: 0;
-  background-color: var(--sculk-cyan);
+  background-color: var(--ancient-cyan);
   transition: width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-.cinematic-link:hover::after {
+.cinematic-link:hover::after,
+.ui-link:hover::after {
   width: 100%;
+  background-color: var(--ancient-cyan-bright);
 }
+
 
 /* Chatbot Restrained Pulse */
 .chatbot-launcher {
@@ -628,11 +766,11 @@ h1, h2, h3 {
   }
 
   .nav-brand {
-    font-family: 'Cinzel', serif;
+    font-family: var(--font-serif);
     font-weight: 700;
     font-size: 1.2rem !important;
     letter-spacing: 2px !important;
-    color: var(--sculk-cyan);
+    color: var(--ancient-cyan) !important;
     text-shadow: 0 0 10px rgba(0, 252, 240, 0.3);
     pointer-events: auto;
   }
@@ -645,12 +783,22 @@ h1, h2, h3 {
 
   .nav-links span,
   .nav-links a {
-    color: var(--ancient-text-dim);
+    color: var(--ancient-cyan) !important;
+    opacity: 0.92;
     text-decoration: none;
+    font-family: var(--font-sans);
+    font-weight: 600;
     font-size: 14px !important;
     letter-spacing: 2px !important;
-    transition: color 0.3s ease;
+    transition: all 0.25s ease;
     min-height: auto !important;
+  }
+
+  .nav-links span:hover,
+  .nav-links a:hover {
+    color: var(--ancient-cyan-bright) !important;
+    opacity: 1;
+    text-shadow: 0 0 10px rgba(0, 252, 240, 0.45);
   }
 
   .scroll-indicator {
@@ -661,7 +809,9 @@ h1, h2, h3 {
     flex-direction: column;
     align-items: center;
     gap: 0.5rem;
-    color: var(--sculk-blue);
+    color: var(--ancient-cyan-muted) !important;
+    font-family: var(--font-sans);
+    font-weight: 600;
     font-size: 10px;
     letter-spacing: 2px;
     transform: none !important;
@@ -670,26 +820,26 @@ h1, h2, h3 {
   }
 
   .hero-title {
-    font-family: 'Cinzel', serif;
+    font-family: var(--font-serif);
     font-size: clamp(52px, 5.5vw, 76px) !important;
     font-weight: 700;
     line-height: 1.1 !important;
     letter-spacing: 2px !important;
-    color: #ffffff;
+    color: var(--text-primary);
     text-shadow: 0 0 20px rgba(0, 252, 240, 0.4);
     margin: 0;
   }
 
   .hero-subtitle {
     font-size: 20px !important;
-    color: var(--sculk-cyan);
+    color: var(--ancient-cyan) !important;
     letter-spacing: 3px !important;
     margin-top: 0.5rem !important;
     font-weight: 400;
   }
 
   .hero-desc {
-    color: var(--ancient-text-dim);
+    color: var(--text-secondary) !important;
     max-width: 600px !important;
     margin-top: 1rem !important;
     line-height: 1.7 !important;
@@ -697,13 +847,16 @@ h1, h2, h3 {
   }
 
   .section-label {
-    font-family: 'Cinzel', serif;
-    color: var(--sculk-blue);
+    font-family: var(--font-serif);
+    font-weight: 700;
+    color: var(--ancient-cyan) !important;
     letter-spacing: 4px !important;
     font-size: 14px !important;
     margin-bottom: 1rem !important;
+    text-shadow: 0 0 10px var(--ancient-cyan-glow);
   }
 }
+
 
 
 

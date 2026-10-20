@@ -152,7 +152,7 @@ export default function LandscapeFullscreenOverlay({
             fontFamily: "'Nunito', sans-serif",
             fontSize: '11px',
             letterSpacing: '3px',
-            color: 'var(--sculk-blue, #00A89A)',
+            color: 'var(--ancient-cyan, #00fcf0)',
             textTransform: 'uppercase',
             marginBottom: '6px',
             display: 'block'
@@ -184,7 +184,7 @@ export default function LandscapeFullscreenOverlay({
             fontFamily: "'Nunito', sans-serif",
             fontSize: '13px',
             lineHeight: 1.4,
-            color: 'var(--ancient-text-dim, #8faeb3)',
+            color: 'var(--text-secondary, #c5d4d8)',
             margin: '0 0 16px 0',
             maxWidth: '360px'
           }}
@@ -245,7 +245,7 @@ export default function LandscapeFullscreenOverlay({
           style={{
             background: 'none',
             border: 'none',
-            color: 'rgba(143, 174, 179, 0.75)',
+            color: 'var(--text-secondary, #c5d4d8)',
             fontFamily: "'Nunito', sans-serif",
             fontSize: '12px',
             letterSpacing: '1px',
