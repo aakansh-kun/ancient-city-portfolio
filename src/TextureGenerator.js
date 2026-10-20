@@ -23,107 +23,136 @@ const DS2 = 0x161a1d;
 const DS3 = 0x22262b;
 const DS4 = 0x111315;
 
+const _cache = {};
+
 export const Textures = {
   get DeepslateTiles() {
-    const cols = [];
-    for (let y = 0; y < 16; y++) {
-      for (let x = 0; x < 16; x++) {
-        if (x % 8 === 0 || y % 8 === 0) cols.push(DS4);
-        else cols.push(Math.random() > 0.5 ? DS1 : Math.random() > 0.5 ? DS2 : DS3);
+    if (!_cache.DeepslateTiles) {
+      const cols = [];
+      for (let y = 0; y < 16; y++) {
+        for (let x = 0; x < 16; x++) {
+          if (x % 8 === 0 || y % 8 === 0) cols.push(DS4);
+          else cols.push(Math.random() > 0.5 ? DS1 : Math.random() > 0.5 ? DS2 : DS3);
+        }
       }
+      _cache.DeepslateTiles = createDataTexture(cols);
     }
-    return createDataTexture(cols);
+    return _cache.DeepslateTiles;
   },
 
   get DeepslateBricks() {
-    const cols = [];
-    for (let y = 0; y < 16; y++) {
-      for (let x = 0; x < 16; x++) {
-        const isHorizontalGrout = y % 4 === 0;
-        const isVerticalGrout = (x + (y >= 4 && y < 8 || y >= 12 ? 4 : 0)) % 8 === 0;
-        if (isHorizontalGrout || isVerticalGrout) cols.push(DS4);
-        else cols.push(Math.random() > 0.5 ? DS1 : DS2);
+    if (!_cache.DeepslateBricks) {
+      const cols = [];
+      for (let y = 0; y < 16; y++) {
+        for (let x = 0; x < 16; x++) {
+          const isHorizontalGrout = y % 4 === 0;
+          const isVerticalGrout = (x + (y >= 4 && y < 8 || y >= 12 ? 4 : 0)) % 8 === 0;
+          if (isHorizontalGrout || isVerticalGrout) cols.push(DS4);
+          else cols.push(Math.random() > 0.5 ? DS1 : DS2);
+        }
       }
+      _cache.DeepslateBricks = createDataTexture(cols);
     }
-    return createDataTexture(cols);
+    return _cache.DeepslateBricks;
   },
 
   get Sculk() {
-    const map = [];
-    const emissive = [];
-    for (let y = 0; y < 16; y++) {
-      for (let x = 0; x < 16; x++) {
-        const isEmissive = Math.random() > 0.94;
-        map.push(isEmissive ? 0x00fcf0 : (Math.random() > 0.5 ? 0x051012 : 0x081b1f));
-        emissive.push(isEmissive ? 0xffffff : 0x000000);
+    if (!_cache.Sculk) {
+      const map = [];
+      const emissive = [];
+      for (let y = 0; y < 16; y++) {
+        for (let x = 0; x < 16; x++) {
+          const isEmissive = Math.random() > 0.94;
+          map.push(isEmissive ? 0x00fcf0 : (Math.random() > 0.5 ? 0x051012 : 0x081b1f));
+          emissive.push(isEmissive ? 0xffffff : 0x000000);
+        }
       }
+      _cache.Sculk = { map: createDataTexture(map), emissiveMap: createDataTexture(emissive) };
     }
-    return { map: createDataTexture(map), emissiveMap: createDataTexture(emissive) };
+    return _cache.Sculk;
   },
 
   get SoulLantern() {
-    const map = [];
-    const emissive = [];
-    for (let y = 0; y < 16; y++) {
-      for (let x = 0; x < 16; x++) {
-        const isFrame = x < 2 || x > 13 || y < 2 || y > 13 || x === 8 || y === 8;
-        if (isFrame) {
-          map.push(0x111111);
-          emissive.push(0x000000);
-        } else {
-          map.push(0x00ffff);
-          emissive.push(0xffffff); // Full bloom on the inner part
+    if (!_cache.SoulLantern) {
+      const map = [];
+      const emissive = [];
+      for (let y = 0; y < 16; y++) {
+        for (let x = 0; x < 16; x++) {
+          const isFrame = x < 2 || x > 13 || y < 2 || y > 13 || x === 8 || y === 8;
+          if (isFrame) {
+            map.push(0x111111);
+            emissive.push(0x000000);
+          } else {
+            map.push(0x00ffff);
+            emissive.push(0xffffff); // Full bloom on the inner part
+          }
         }
       }
+      _cache.SoulLantern = { map: createDataTexture(map), emissiveMap: createDataTexture(emissive) };
     }
-    return { map: createDataTexture(map), emissiveMap: createDataTexture(emissive) };
+    return _cache.SoulLantern;
   },
 
   get WardenBody() {
-    const cols = [];
-    const baseCols = [0x061014, 0x07171b, 0x092126, 0x0b2b30];
-    for (let i = 0; i < 256; i++) {
-      cols.push(baseCols[Math.floor(Math.random() * baseCols.length)]);
+    if (!_cache.WardenBody) {
+      const cols = [];
+      const baseCols = [0x061014, 0x07171b, 0x092126, 0x0b2b30];
+      for (let i = 0; i < 256; i++) {
+        cols.push(baseCols[Math.floor(Math.random() * baseCols.length)]);
+      }
+      _cache.WardenBody = createDataTexture(cols);
     }
-    return createDataTexture(cols);
+    return _cache.WardenBody;
   },
 
   get WardenBone() {
-    const cols = [];
-    const baseCols = [0x9b9585, 0x77786f, 0x56666a, 0x344b50];
-    for (let i = 0; i < 256; i++) {
-      cols.push(baseCols[Math.floor(Math.random() * baseCols.length)]);
+    if (!_cache.WardenBone) {
+      const cols = [];
+      const baseCols = [0x9b9585, 0x77786f, 0x56666a, 0x344b50];
+      for (let i = 0; i < 256; i++) {
+        cols.push(baseCols[Math.floor(Math.random() * baseCols.length)]);
+      }
+      _cache.WardenBone = createDataTexture(cols);
     }
-    return createDataTexture(cols);
+    return _cache.WardenBone;
   },
 
   get WardenArmUpper() {
-    const cols = [];
-    const baseCols = [0x9b9585, 0x77786f, 0x56666a];
-    for (let i = 0; i < 256; i++) {
-      cols.push(baseCols[Math.floor(Math.random() * baseCols.length)]);
+    if (!_cache.WardenArmUpper) {
+      const cols = [];
+      const baseCols = [0x9b9585, 0x77786f, 0x56666a];
+      for (let i = 0; i < 256; i++) {
+        cols.push(baseCols[Math.floor(Math.random() * baseCols.length)]);
+      }
+      _cache.WardenArmUpper = createDataTexture(cols);
     }
-    return createDataTexture(cols);
+    return _cache.WardenArmUpper;
   },
 
   get WardenArmMid() {
-    const cols = [];
-    const baseCols = [0x56666a, 0x344b50, 0x08262b];
-    for (let i = 0; i < 256; i++) {
-      cols.push(baseCols[Math.floor(Math.random() * baseCols.length)]);
+    if (!_cache.WardenArmMid) {
+      const cols = [];
+      const baseCols = [0x56666a, 0x344b50, 0x08262b];
+      for (let i = 0; i < 256; i++) {
+        cols.push(baseCols[Math.floor(Math.random() * baseCols.length)]);
+      }
+      _cache.WardenArmMid = createDataTexture(cols);
     }
-    return createDataTexture(cols);
+    return _cache.WardenArmMid;
   },
 
   get WardenSculk() {
-    const cols = [];
-    const emissive = [];
-    const baseCols = [0x02090b, 0x041216, 0x061b20];
-    for (let i = 0; i < 256; i++) {
-      const isCyan = Math.random() > 0.9;
-      cols.push(isCyan ? 0x00A89A : baseCols[Math.floor(Math.random() * baseCols.length)]);
-      emissive.push(isCyan ? 0x00A89A : 0x000000);
+    if (!_cache.WardenSculk) {
+      const cols = [];
+      const emissive = [];
+      const baseCols = [0x02090b, 0x041216, 0x061b20];
+      for (let i = 0; i < 256; i++) {
+        const isCyan = Math.random() > 0.9;
+        cols.push(isCyan ? 0x00A89A : baseCols[Math.floor(Math.random() * baseCols.length)]);
+        emissive.push(isCyan ? 0x00A89A : 0x000000);
+      }
+      _cache.WardenSculk = { map: createDataTexture(cols), emissiveMap: createDataTexture(emissive) };
     }
-    return { map: createDataTexture(cols), emissiveMap: createDataTexture(emissive) };
+    return _cache.WardenSculk;
   }
 };

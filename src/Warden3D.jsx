@@ -52,7 +52,7 @@ export const SculkParticles = ({ count = 60 }) => {
 };
 
 // --- Helper for Horns ---
-const WardenHorn = ({ side, clippingPlane }) => {
+const WardenHorn = ({ side, clippingPlane, isMobile = false }) => {
   const s = side; // 1 or -1
   const rootRef = useRef();
   const reactionRef = useRef(0);
@@ -163,7 +163,7 @@ const WardenHorn = ({ side, clippingPlane }) => {
       
       {/* Particles Group */}
       <group ref={particlesRef}>
-        {[...Array(5)].map((_, i) => (
+        {[...Array(isMobile ? 1 : 5)].map((_, i) => (
           <mesh key={i} userData={{ active: false, vel: new THREE.Vector3() }} visible={false} material={tipMat}>
             <boxGeometry args={[0.08, 0.08, 0.08]} />
           </mesh>
@@ -174,7 +174,7 @@ const WardenHorn = ({ side, clippingPlane }) => {
 };
 
 // --- Warden Body Hierarchy & Rig ---
-export const WardenBody = ({ clippingPlane }) => {
+export const WardenBody = ({ clippingPlane, isMobile = false }) => {
   const torsoRef = useRef();
   const headRef = useRef();
   const leftArmRef = useRef();
@@ -308,8 +308,10 @@ export const WardenBody = ({ clippingPlane }) => {
 
   return (
     <group>
-      {/* Cinematic Rim Light to outline body silhouette against dark background */}
-      <pointLight position={[-5, 6, -5]} color="#00fcf0" intensity={1.5} distance={25} decay={1.5} />
+      {/* Cinematic Rim Light to outline body silhouette against dark background (desktop/tablet only) */}
+      {!isMobile && (
+        <pointLight position={[-5, 6, -5]} color="#00fcf0" intensity={1.5} distance={25} decay={1.5} />
+      )}
       
       {/* HEAD ROOT */}
       <group ref={headRef} position={[0, HEAD_Y, 0.2]}>
@@ -323,8 +325,8 @@ export const WardenBody = ({ clippingPlane }) => {
           <mesh position={[0, -0.15, -0.1]}><boxGeometry args={[1.4, 0.7, 0.1]} /><meshStandardMaterial color="#000000" roughness={1} /></mesh>
           <mesh position={[0, -0.4, -0.05]}><boxGeometry args={[1.0, 0.1, 0.1]} /><meshStandardMaterial color="#003b38" emissive="#00A89A" emissiveIntensity={0.2} /></mesh>
         </group>
-        <WardenHorn side={-1} clippingPlane={clippingPlane} />
-        <WardenHorn side={1} clippingPlane={clippingPlane} />
+        <WardenHorn side={-1} clippingPlane={clippingPlane} isMobile={isMobile} />
+        <WardenHorn side={1} clippingPlane={clippingPlane} isMobile={isMobile} />
       </group>
 
       {/* TORSO ROOT */}
@@ -435,7 +437,7 @@ export const WardenBody = ({ clippingPlane }) => {
 
 import { scrollProgress, globalFlags } from './AncientCityJourney';
 
-export const WardenEncounter = () => {
+export const WardenEncounter = ({ isMobile = false }) => {
   const spawnRootRef = useRef();
   const normalizedRootRef = useRef();
   const wardenBodyRef = useRef();
@@ -518,7 +520,7 @@ export const WardenEncounter = () => {
     <group ref={spawnRootRef} position={[0, -999, 0]}>
       <group ref={normalizedRootRef}>
         <group ref={wardenBodyRef}>
-          <WardenBody clippingPlane={clippingPlane} />
+          <WardenBody clippingPlane={clippingPlane} isMobile={isMobile} />
         </group>
       </group>
     </group>

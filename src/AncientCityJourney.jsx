@@ -12,7 +12,57 @@ import { portfolioData } from './portfolioData';
 export const scrollProgress = { target: 0, smooth: 0 };
 export const globalFlags = { skipWardenCinematic: false };
 
-const AncientCityGeometry = () => {
+// ============================================================
+// RENDERING QUALITY TIERS (Independent of UI Breakpoints)
+// ============================================================
+export const QUALITY_TIERS = {
+  DESKTOP_HIGH: {
+    id: 'DESKTOP_HIGH',
+    maxDpr: 2.0,
+    enableShadows: true,
+    enableAO: true,
+    particleCount: 1000,
+    maxLanternLights: 10,
+    lanternShadows: true,
+    bloomIntensity: 1.5,
+    bloomMipmapBlur: true
+  },
+  TABLET_MEDIUM: {
+    id: 'TABLET_MEDIUM',
+    maxDpr: 1.5,
+    enableShadows: true,
+    enableAO: false,
+    particleCount: 600,
+    maxLanternLights: 4,
+    lanternShadows: false,
+    bloomIntensity: 1.3,
+    bloomMipmapBlur: true
+  },
+  MOBILE_BALANCED: {
+    id: 'MOBILE_BALANCED',
+    maxDpr: 1.25,
+    enableShadows: false, // Critical: shadow maps on mobile kill GPU fill-rate
+    enableAO: false, // Critical: SSAO on mobile is a fill-rate killer
+    particleCount: 400, // 40% of desktop
+    maxLanternLights: 2, // 2 key lantern lights along path, NO shadows
+    lanternShadows: false,
+    bloomIntensity: 1.1,
+    bloomMipmapBlur: true
+  },
+  MOBILE_LOW: {
+    id: 'MOBILE_LOW',
+    maxDpr: 1.0,
+    enableShadows: false,
+    enableAO: false,
+    particleCount: 250,
+    maxLanternLights: 1,
+    lanternShadows: false,
+    bloomIntensity: 0.9,
+    bloomMipmapBlur: false
+  }
+};
+
+const AncientCityGeometry = ({ qualityTier = QUALITY_TIERS.DESKTOP_HIGH }) => {
   const floorRef = useRef();
   const brickRef = useRef();
   const sculkRef = useRef();
@@ -176,28 +226,46 @@ const AncientCityGeometry = () => {
     brickRef.current.instanceMatrix.needsUpdate = true;
     sculkRef.current.instanceMatrix.needsUpdate = true;
     lanternRef.current.instanceMatrix.needsUpdate = true;
+
+    // Compute bounding volumes for frustum culling
+    floorRef.current.geometry.computeBoundingSphere();
+    brickRef.current.geometry.computeBoundingSphere();
+    sculkRef.current.geometry.computeBoundingSphere();
+    lanternRef.current.geometry.computeBoundingSphere();
   }, [fMat, bMat, sMat, lMat]);
 
   return (
     <group>
-      <instancedMesh ref={floorRef} args={[null, materials.floor, fMat.length]} receiveShadow castShadow>
+      <instancedMesh
+        ref={floorRef}
+        args={[null, materials.floor, fMat.length]}
+        receiveShadow={qualityTier.enableShadows}
+        castShadow={qualityTier.enableShadows}
+        frustumCulled
+      >
         <boxGeometry args={[1, 1, 1]} />
       </instancedMesh>
 
-      <instancedMesh ref={brickRef} args={[null, materials.brick, bMat.length]} receiveShadow castShadow>
+      <instancedMesh
+        ref={brickRef}
+        args={[null, materials.brick, bMat.length]}
+        receiveShadow={qualityTier.enableShadows}
+        castShadow={qualityTier.enableShadows}
+        frustumCulled
+      >
         <boxGeometry args={[1, 1, 1]} />
       </instancedMesh>
 
-      <instancedMesh ref={sculkRef} args={[null, materials.sculk, sMat.length]}>
+      <instancedMesh ref={sculkRef} args={[null, materials.sculk, sMat.length]} frustumCulled>
         <boxGeometry args={[1, 1, 1]} />
       </instancedMesh>
 
-      <instancedMesh ref={lanternRef} args={[null, materials.lantern, lMat.length]}>
+      <instancedMesh ref={lanternRef} args={[null, materials.lantern, lMat.length]} frustumCulled>
         <boxGeometry args={[0.5, 0.8, 0.5]} />
       </instancedMesh>
 
-      {/* Point lights for the first few soul lanterns to dynamically illuminate the path */}
-      {lMat.slice(0, 10).map((mat, i) => {
+      {/* Point lights for the soul lanterns to dynamically illuminate the path */}
+      {lMat.slice(0, qualityTier.maxLanternLights).map((mat, i) => {
         const position = new THREE.Vector3().setFromMatrixPosition(mat);
         return (
           <pointLight
@@ -207,7 +275,7 @@ const AncientCityGeometry = () => {
             intensity={2}
             distance={15}
             decay={2}
-            castShadow
+            castShadow={qualityTier.lanternShadows}
             shadow-bias={-0.001}
           />
         );
@@ -245,8 +313,7 @@ const EnvironmentProgression = () => {
 };
 
 // Very sparse, dark cyan dust
-const Particles = ({ isPaused = false }) => {
-  const count = 1000;
+const Particles = ({ isPaused = false, count = 1000 }) => {
   const positions = useMemo(() => {
     const pos = new Float32Array(count * 3);
     for (let i = 0; i < count; i++) {
@@ -259,14 +326,14 @@ const Particles = ({ isPaused = false }) => {
 
   const pointsRef = useRef();
   useFrame((state) => {
-    if (isPaused) return;
+    if (isPaused || !pointsRef.current) return;
     pointsRef.current.rotation.y = state.clock.elapsedTime * 0.02;
     // Particles get slightly more noticeable deeper in
     pointsRef.current.material.opacity = THREE.MathUtils.lerp(0.3, 0.7, scrollProgress.smooth);
   });
 
   return (
-    <points ref={pointsRef}>
+    <points ref={pointsRef} frustumCulled>
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" count={count} array={positions} itemSize={3} />
       </bufferGeometry>
@@ -550,25 +617,85 @@ const SculkEcho = ({ isLandscapePhone = false }) => {
 
 // ============================================================
 // ============================================================
+// ============================================================
 // PortfolioOverlay — pure DOM, reads scrollProgress via rAF
+// Updates section opacity and translateY via direct DOM refs
+// to eliminate 60 FPS React re-renders while scrolling.
 // ============================================================
 const PortfolioOverlay = ({ experienceMode = 'desktop' }) => {
   const isDesktop = experienceMode === 'desktop';
   const isMobileLandscape = experienceMode === 'mobile-landscape';
   const isTablet = experienceMode === 'tablet';
 
-  const [progress, setProgress] = React.useState(0);
-  const [transmitReveal, setTransmitReveal] = React.useState(0);
   const [formFeedback, setFormFeedback] = React.useState({ state: 'idle', message: '' });
   const [isKeyboardActive, setIsKeyboardActive] = React.useState(false);
+
+  const heroRef = React.useRef(null);
+  const aboutRef = React.useRef(null);
+  const experienceRef = React.useRef(null);
+  const skillsRef = React.useRef(null);
+  const projectsRef = React.useRef(null);
+  const contactRef = React.useRef(null);
+
+  const updateSectionTransform = (el, name, p, reveal) => {
+    if (!el) return;
+    if (name === 'contact') {
+      const opacity = Math.max(0, Math.min(1, reveal));
+      const translateY = 16 * (1 - opacity);
+      el.style.opacity = opacity.toFixed(4);
+      el.style.transform = `translateY(${translateY.toFixed(2)}px)`;
+      el.style.pointerEvents = opacity > 0.5 ? 'auto' : 'none';
+      el.style.visibility = opacity > 0.01 ? 'visible' : 'hidden';
+      return;
+    }
+
+    let center = 0, radius = 0;
+    switch(name) {
+      case 'hero': center = 0.02; radius = 0.13; break;
+      case 'about': center = 0.20; radius = 0.10; break;
+      case 'experience': center = 0.35; radius = 0.11; break;
+      case 'skills': center = 0.52; radius = 0.10; break;
+      case 'projects': center = 0.68; radius = 0.10; break;
+      default: break;
+    }
+
+    const dist = Math.abs(p - center);
+    let opacity = 0;
+    let translateY = 10;
+    
+    if (dist < radius) {
+      const normalized = dist / radius;
+      opacity = 1 - Math.pow(normalized, 2.5);
+      translateY = (p - center) > 0 ? (normalized * -10) : (normalized * 10);
+    }
+
+    el.style.opacity = opacity.toFixed(4);
+    el.style.transform = `translateY(${translateY.toFixed(2)}px)`;
+    el.style.pointerEvents = opacity > 0.5 ? 'auto' : 'none';
+    el.style.visibility = opacity > 0.01 ? 'visible' : 'hidden';
+  };
+
+  const updateAllSections = React.useCallback((p, reveal) => {
+    updateSectionTransform(heroRef.current, 'hero', p, reveal);
+    updateSectionTransform(aboutRef.current, 'about', p, reveal);
+    updateSectionTransform(experienceRef.current, 'experience', p, reveal);
+    updateSectionTransform(skillsRef.current, 'skills', p, reveal);
+    updateSectionTransform(projectsRef.current, 'projects', p, reveal);
+    updateSectionTransform(contactRef.current, 'contact', p, reveal);
+  }, []);
+
+  React.useLayoutEffect(() => {
+    updateAllSections(scrollProgress.smooth, 0);
+  }, [updateAllSections, isDesktop, isMobileLandscape, isTablet]);
 
   React.useEffect(() => {
     let raf;
     let currentReveal = 0;
+    let lastP = -999;
+    let lastReveal = -999;
 
     const loop = () => {
       const p = scrollProgress.smooth;
-      setProgress(p);
 
       // Reset skip cinematic if user scrolls back significantly
       if (p < 0.90) {
@@ -592,12 +719,18 @@ const PortfolioOverlay = ({ experienceMode = 'desktop' }) => {
         if (currentReveal < -1.8) currentReveal = -1.8;
       }
 
-      setTransmitReveal(currentReveal);
+      if (Math.abs(p - lastP) > 0.0001 || Math.abs(currentReveal - lastReveal) > 0.005) {
+        updateAllSections(p, currentReveal);
+        lastP = p;
+        lastReveal = currentReveal;
+      }
+
       raf = requestAnimationFrame(loop);
     };
+
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, []);
+  }, [updateAllSections]);
 
   // Shared mail submission logic
   const handleFormSubmit = async (e) => {
@@ -706,7 +839,7 @@ const PortfolioOverlay = ({ experienceMode = 'desktop' }) => {
     padding: '18px 20px'
   };
 
-  // Section style mapping
+  // Section static layout style mapping (initial opacity 0, visibility hidden)
   const sectionStyle = (name, align = 'left') => {
     // 1. DESKTOP: 100% Exact original implementation from 2cb7a83
     if (isDesktop) {
@@ -715,31 +848,11 @@ const PortfolioOverlay = ({ experienceMode = 'desktop' }) => {
           position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
           display: 'flex', flexDirection: 'column', justifyContent: 'center',
           padding: '0 10vw 0 50vw', textAlign: 'right',
-          opacity: transmitReveal,
-          transform: `translateY(${16 * (1 - transmitReveal)}px)`,
-          pointerEvents: transmitReveal > 0.5 ? 'auto' : 'none',
-          visibility: transmitReveal > 0.01 ? 'visible' : 'hidden'
+          opacity: 0,
+          visibility: 'hidden',
+          pointerEvents: 'none',
+          transition: 'opacity 0.1s linear, transform 0.1s linear'
         };
-      }
-
-      let center, radius;
-      switch(name) {
-        case 'hero': center = 0.02; radius = 0.13; break;
-        case 'about': center = 0.20; radius = 0.10; break;
-        case 'experience': center = 0.35; radius = 0.11; break;
-        case 'skills': center = 0.52; radius = 0.10; break;
-        case 'projects': center = 0.68; radius = 0.10; break;
-        default: center = 0; radius = 0;
-      }
-
-      const dist = Math.abs(progress - center);
-      let opacity = 0;
-      let translateY = 10;
-      
-      if (dist < radius) {
-        const normalized = dist / radius; // 0 (center) to 1 (edge)
-        opacity = 1 - Math.pow(normalized, 2.5); // Stays at 1 longer, drops off smoothly
-        translateY = (progress - center) > 0 ? (normalized * -10) : (normalized * 10);
       }
 
       return {
@@ -753,10 +866,9 @@ const PortfolioOverlay = ({ experienceMode = 'desktop' }) => {
         justifyContent: 'center',
         padding: align === 'right' ? '0 10vw 0 50vw' : align === 'center' ? '0 15vw' : '0 50vw 0 10vw',
         textAlign: align === 'right' ? 'right' : align === 'center' ? 'center' : 'left',
-        opacity,
-        transform: `translateY(${translateY}px)`,
-        pointerEvents: opacity > 0.5 ? 'auto' : 'none',
-        visibility: opacity > 0.01 ? 'visible' : 'hidden',
+        opacity: 0,
+        visibility: 'hidden',
+        pointerEvents: 'none',
         transition: 'opacity 0.1s linear, transform 0.1s linear'
       };
     }
@@ -781,31 +893,11 @@ const PortfolioOverlay = ({ experienceMode = 'desktop' }) => {
         paddingRight: isMobileLandscape ? 'max(4.5vw, env(safe-area-inset-right))' : '10vw',
         boxSizing: 'border-box',
         textAlign: 'right',
-        opacity: transmitReveal,
-        transform: `translateY(${16 * (1 - transmitReveal)}px)`,
-        pointerEvents: transmitReveal > 0.5 ? 'auto' : 'none',
-        visibility: transmitReveal > 0.01 ? 'visible' : 'hidden'
+        opacity: 0,
+        visibility: 'hidden',
+        pointerEvents: 'none',
+        transition: 'opacity 0.1s linear, transform 0.1s linear'
       };
-    }
-
-    let center, radius;
-    switch(name) {
-      case 'hero': center = 0.02; radius = 0.13; break;
-      case 'about': center = 0.20; radius = 0.10; break;
-      case 'experience': center = 0.35; radius = 0.11; break;
-      case 'skills': center = 0.52; radius = 0.10; break;
-      case 'projects': center = 0.68; radius = 0.10; break;
-      default: center = 0; radius = 0;
-    }
-
-    const dist = Math.abs(progress - center);
-    let opacity = 0;
-    let translateY = 10;
-    
-    if (dist < radius) {
-      const normalized = dist / radius;
-      opacity = 1 - Math.pow(normalized, 2.5);
-      translateY = (progress - center) > 0 ? (normalized * -10) : (normalized * 10);
     }
 
     let paddingLeft, paddingRight;
@@ -835,10 +927,9 @@ const PortfolioOverlay = ({ experienceMode = 'desktop' }) => {
       paddingRight,
       boxSizing: 'border-box',
       textAlign: align === 'right' ? 'right' : align === 'center' ? 'center' : 'left',
-      opacity,
-      transform: `translateY(${translateY}px)`,
-      pointerEvents: opacity > 0.5 ? 'auto' : 'none',
-      visibility: opacity > 0.01 ? 'visible' : 'hidden',
+      opacity: 0,
+      visibility: 'hidden',
+      pointerEvents: 'none',
       transition: 'opacity 0.1s linear, transform 0.1s linear'
     };
   };
@@ -847,7 +938,7 @@ const PortfolioOverlay = ({ experienceMode = 'desktop' }) => {
     <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: isDesktop ? '100vh' : '100dvh', pointerEvents: 'none', zIndex: 10 }}>
 
       {/* HERO — 0 to 14% */}
-      <div style={sectionStyle('hero', 'left')}>
+      <div ref={heroRef} style={sectionStyle('hero', 'left')}>
         <div style={{ position: 'absolute', top: 0, left: 0, width: isMobileLandscape ? '48vw' : '60vw', height: '100vh', background: 'linear-gradient(to right, rgba(2,4,6,0.85) 0%, rgba(2,4,6,0) 100%)', zIndex: -1 }}></div>
         {isMobileLandscape ? (
           <div style={{ maxWidth: 'min(440px, 46vw)' }}>
@@ -873,7 +964,7 @@ const PortfolioOverlay = ({ experienceMode = 'desktop' }) => {
       </div>
 
       {/* ABOUT — 14 to 28% */}
-      <div style={sectionStyle('about', 'right')}>
+      <div ref={aboutRef} style={sectionStyle('about', 'right')}>
         {isMobileLandscape ? (
           <div style={{ ...mobileBasePanelStyle, width: 'min(44vw, 480px)', maxWidth: 'min(44vw, 480px)', marginLeft: 'auto', textAlign: 'left' }}>
             <h2 className="section-label" style={{ fontSize: '12px', letterSpacing: '0.22em', marginBottom: '6px' }}>01 / ABOUT</h2>
@@ -890,7 +981,7 @@ const PortfolioOverlay = ({ experienceMode = 'desktop' }) => {
       </div>
 
       {/* EXPERIENCE — 28 to 45% */}
-      <div style={sectionStyle('experience', 'left')}>
+      <div ref={experienceRef} style={sectionStyle('experience', 'left')}>
         {isMobileLandscape ? (
           <div 
             style={{ 
@@ -931,7 +1022,7 @@ const PortfolioOverlay = ({ experienceMode = 'desktop' }) => {
       </div>
 
       {/* SKILLS — 45 to 60% */}
-      <div style={sectionStyle('skills', 'center')}>
+      <div ref={skillsRef} style={sectionStyle('skills', 'center')}>
         {isMobileLandscape ? (
           <div style={{ ...mobileBasePanelStyle, width: 'min(62vw, 580px)', maxWidth: 'min(62vw, 580px)', margin: '0 auto' }}>
             <h2 className="section-label" style={{ fontSize: '13px', letterSpacing: '0.22em', marginBottom: '10px' }}>03 / SCULK NETWORK</h2>
@@ -968,7 +1059,7 @@ const PortfolioOverlay = ({ experienceMode = 'desktop' }) => {
       </div>
 
       {/* PROJECTS — 60 to 77% */}
-      <div style={sectionStyle('projects', 'center')}>
+      <div ref={projectsRef} style={sectionStyle('projects', 'center')}>
         <h2 className="section-label" style={{ 
           fontSize: isMobileLandscape ? '13px' : undefined, 
           letterSpacing: isMobileLandscape ? '0.22em' : undefined, 
@@ -1016,7 +1107,7 @@ const PortfolioOverlay = ({ experienceMode = 'desktop' }) => {
       </div>
 
       {/* CONTACT — 92 to 100% */}
-      <div style={sectionStyle('contact', 'right')}>
+      <div ref={contactRef} style={sectionStyle('contact', 'right')}>
         {isMobileLandscape ? (
           <div 
             style={{ 
@@ -1308,6 +1399,54 @@ const PortfolioOverlay = ({ experienceMode = 'desktop' }) => {
 };
 
 // ============================================================
+// Development & Debug Diagnostics Collector
+// Samples renderer info and counts active lights every 500ms
+// ============================================================
+const DiagnosticsCollector = ({ onUpdate, isPaused = false }) => {
+  const frameCount = useRef(0);
+  const lastTime = useRef(typeof performance !== 'undefined' ? performance.now() : 0);
+
+  useFrame(({ gl, scene }) => {
+    if (isPaused) return;
+    frameCount.current++;
+    const now = performance.now();
+    const delta = now - lastTime.current;
+
+    if (delta >= 500) {
+      const fps = Math.round((frameCount.current * 1000) / delta);
+      const frameTime = +(delta / frameCount.current).toFixed(1);
+      frameCount.current = 0;
+      lastTime.current = now;
+
+      let activeLights = 0;
+      let shadowLights = 0;
+      scene.traverse((obj) => {
+        if (obj.isLight) {
+          activeLights++;
+          if (obj.castShadow) shadowLights++;
+        }
+      });
+
+      onUpdate({
+        fps,
+        frameTime,
+        calls: gl.info.render.calls,
+        triangles: gl.info.render.triangles,
+        geometries: gl.info.memory.geometries,
+        textures: gl.info.memory.textures,
+        activeLights,
+        shadowLights,
+        dpr: typeof window !== 'undefined' ? window.devicePixelRatio : 1,
+        rendererDpr: +gl.getPixelRatio().toFixed(2),
+        resolution: `${gl.domElement.width}x${gl.domElement.height}`
+      });
+    }
+  });
+
+  return null;
+};
+
+// ============================================================
 // Main Export — native scroll, no drei ScrollControls
 // ============================================================
 export default function AncientCityJourney({ 
@@ -1318,6 +1457,59 @@ export default function AncientCityJourney({
   isTabletLandscape = false, 
   isTouch = false 
 }) {
+  const isDesktop = experienceMode === 'desktop';
+  const isMobileLandscape = experienceMode === 'mobile-landscape' || isLandscapePhone || isSmallLandscape;
+  const isTablet = experienceMode === 'tablet' || isTabletLandscape;
+
+  // Quality Tier State & Adaptive Stepping
+  const initialTierId = isMobileLandscape
+    ? 'MOBILE_BALANCED'
+    : isTablet
+    ? 'TABLET_MEDIUM'
+    : 'DESKTOP_HIGH';
+
+  const [tierId, setTierId] = React.useState(initialTierId);
+
+  // Sync tier with experienceMode when device or orientation changes
+  React.useEffect(() => {
+    if (isMobileLandscape) {
+      setTierId('MOBILE_BALANCED');
+    } else if (isTablet) {
+      setTierId('TABLET_MEDIUM');
+    } else {
+      setTierId('DESKTOP_HIGH');
+    }
+  }, [isMobileLandscape, isTablet]);
+
+  const qualityTier = QUALITY_TIERS[tierId] || QUALITY_TIERS.DESKTOP_HIGH;
+
+  // Diagnostic data for DEV or ?debug=1 / #debug
+  const [diagnostics, setDiagnostics] = React.useState(null);
+  const showDiagnostics = typeof window !== 'undefined' && (
+    import.meta.env.DEV || 
+    window.location.search.includes('debug=1') || 
+    window.location.hash.includes('debug')
+  );
+
+  const fpsHistory = React.useRef([]);
+  const handleDiagnosticsUpdate = React.useCallback((diag) => {
+    setDiagnostics(diag);
+
+    // Conservative adaptive stepping for mobile landscape
+    if (isMobileLandscape) {
+      fpsHistory.current.push(diag.fps);
+      if (fpsHistory.current.length > 6) fpsHistory.current.shift();
+
+      if (fpsHistory.current.length >= 4) {
+        const avgFps = fpsHistory.current.reduce((a, b) => a + b, 0) / fpsHistory.current.length;
+        if (avgFps < 35 && tierId === 'MOBILE_BALANCED') {
+          // Sustained FPS < 35 on mobile: step down to MOBILE_LOW
+          setTierId('MOBILE_LOW');
+        }
+      }
+    }
+  }, [isMobileLandscape, tierId]);
+
   // Listen to native window scroll
   React.useEffect(() => {
     const onScroll = () => {
@@ -1331,10 +1523,6 @@ export default function AncientCityJourney({
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  const isDesktop = experienceMode === 'desktop';
-  const isMobileLandscape = experienceMode === 'mobile-landscape' || isLandscapePhone || isSmallLandscape;
-  const isTablet = experienceMode === 'tablet' || isTabletLandscape;
-
   return (
     <>
       {/* Scroll driver — creates 800vh of native scroll distance */}
@@ -1344,11 +1532,14 @@ export default function AncientCityJourney({
       <div style={{ width: '100vw', height: isDesktop ? '100vh' : '100dvh', position: 'fixed', top: 0, left: 0, zIndex: 0, background: '#020406' }}>
         <Canvas 
           frameloop={isPaused ? "demand" : "always"}
-          shadows 
-          dpr={typeof window !== 'undefined' ? (isMobileLandscape ? Math.min(window.devicePixelRatio, 1.25) : isTablet ? Math.min(window.devicePixelRatio, 1.5) : Math.min(window.devicePixelRatio, 2)) : 1}
+          shadows={qualityTier.enableShadows}
+          dpr={typeof window !== 'undefined' ? Math.min(window.devicePixelRatio, qualityTier.maxDpr) : 1}
           camera={{ position: [0, 1.6, 15], fov: 65 }} 
           gl={{ antialias: false, powerPreference: "high-performance", localClippingEnabled: true }}
         >
+          {showDiagnostics && (
+            <DiagnosticsCollector onUpdate={handleDiagnosticsUpdate} isPaused={isPaused} />
+          )}
 
           {/* Dynamic Environment Progression handles fog and ambient lighting */}
           <EnvironmentProgression />
@@ -1358,22 +1549,58 @@ export default function AncientCityJourney({
             <CinematicCamera isPaused={isPaused} experienceMode={experienceMode} />
 
             {/* The 3D environment is FIXED in world space */}
-            <AncientCityGeometry />
-            <Particles isPaused={isPaused} />
+            <AncientCityGeometry qualityTier={qualityTier} />
+            <Particles isPaused={isPaused} count={qualityTier.particleCount} />
 
             {/* Warden Encounter at Z = -106.5, Middle-Left */}
             <group position={[-2.5, 0, -106.5]}>
-              <WardenEncounter />
+              <WardenEncounter isMobile={isMobileLandscape} />
             </group>
 
             {/* Post Processing for Shader Quality */}
             <EffectComposer disableNormalPass>
-              <N8AO aoRadius={2.0} intensity={3.0} />
-              <Bloom luminanceThreshold={0.5} mipmapBlur intensity={1.5} />
+              {qualityTier.enableAO && <N8AO aoRadius={2.0} intensity={3.0} />}
+              <Bloom
+                luminanceThreshold={0.5}
+                mipmapBlur={qualityTier.bloomMipmapBlur}
+                intensity={qualityTier.bloomIntensity}
+              />
             </EffectComposer>
           </React.Suspense>
         </Canvas>
       </div>
+
+      {/* Development / Debug HUD Overlay */}
+      {showDiagnostics && diagnostics && (
+        <div style={{
+          position: 'fixed',
+          top: 54,
+          left: 14,
+          zIndex: 9999,
+          background: 'rgba(2, 6, 8, 0.90)',
+          border: '1px solid rgba(0, 252, 240, 0.4)',
+          borderRadius: '4px',
+          padding: '8px 12px',
+          fontFamily: 'monospace',
+          fontSize: '11px',
+          color: '#00fcf0',
+          lineHeight: '1.45',
+          pointerEvents: 'none',
+          boxShadow: '0 0 15px rgba(0,0,0,0.8)'
+        }}>
+          <div style={{ fontWeight: 'bold', color: '#fff', borderBottom: '1px solid rgba(0,252,240,0.2)', marginBottom: '4px', paddingBottom: '2px' }}>
+            SCENE PROFILER ({tierId})
+          </div>
+          <div>FPS: <span style={{ color: diagnostics.fps < 35 ? '#ff4b4b' : diagnostics.fps < 50 ? '#ffb700' : '#00ff88', fontWeight: 'bold' }}>{diagnostics.fps}</span> ({diagnostics.frameTime}ms)</div>
+          <div>Calls: {diagnostics.calls} | Triangles: {diagnostics.triangles.toLocaleString()}</div>
+          <div>Geometries: {diagnostics.geometries} | Textures: {diagnostics.textures}</div>
+          <div>Lights: {diagnostics.activeLights} (Shadows: {diagnostics.shadowLights})</div>
+          <div>Particles: {qualityTier.particleCount}</div>
+          <div>DPR: {diagnostics.dpr} (WebGL: {diagnostics.rendererDpr})</div>
+          <div>Canvas: {diagnostics.resolution}</div>
+          <div>Post-AO: {qualityTier.enableAO ? 'ON' : 'OFF'} | Bloom: {qualityTier.bloomIntensity}x</div>
+        </div>
+      )}
 
       {/* Portfolio HTML overlay — COMPLETELY outside Canvas */}
       <PortfolioOverlay experienceMode={experienceMode} />
