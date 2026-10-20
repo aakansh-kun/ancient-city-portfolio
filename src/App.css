@@ -101,58 +101,84 @@ h1, h2, h3 {
 .nav-links span,
 .nav-links a {
   color: var(--ancient-cyan);
-  opacity: 0.92;
+  opacity: 0.70;
   text-decoration: none;
   font-family: var(--font-sans);
   font-weight: 600;
   font-size: 0.9rem;
   letter-spacing: 2px;
   text-transform: uppercase;
-  transition: all 0.25s ease;
+  transition: opacity 0.2s ease, color 0.2s ease;
   cursor: pointer;
   user-select: none;
 }
 
 .nav-links span:hover,
-.nav-links a:hover {
+.nav-links a:hover,
+.nav-links span:focus-visible,
+.nav-links a:focus-visible {
   color: var(--ancient-cyan-bright);
   opacity: 1;
-  text-shadow: 0 0 10px rgba(0, 252, 240, 0.45);
+}
+
+.nav-links span.active,
+.nav-links a.active {
+  color: var(--ancient-cyan);
+  opacity: 1;
+  text-shadow: 0 0 8px rgba(0, 252, 240, 0.35);
 }
 
 /* Scroll Indicator */
 .scroll-indicator {
   position: fixed;
-  bottom: 2rem;
+  bottom: 2.5rem;
   left: 2rem;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 1rem;
-  z-index: 100;
+  gap: 0.65rem;
+  z-index: 50;
   pointer-events: none;
 }
 
 .sculk-line {
   width: 2px;
-  height: 40px;
-  background: linear-gradient(to bottom, var(--ancient-cyan), transparent);
-  animation: pulseLine 2s infinite;
+  height: 36px;
+  background: linear-gradient(to bottom, transparent, var(--ancient-cyan) 60%, var(--ancient-cyan-bright));
+  border-radius: 1px;
+  box-shadow: 0 0 8px rgba(0, 252, 240, 0.4);
+  animation: sculkSignalPulse 2.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
 .scroll-indicator span {
   writing-mode: vertical-rl;
   text-transform: uppercase;
-  font-size: 0.7rem;
+  font-size: 11px;
   letter-spacing: 3px;
-  color: var(--ancient-cyan-muted);
+  color: var(--text-primary);
+  opacity: 0.95;
   font-family: var(--font-sans);
-  font-weight: 600;
+  font-weight: 700;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.85);
 }
 
-@keyframes pulseLine {
-  0% { opacity: 0.3; transform: scaleY(0.8); transform-origin: top; }
-  50% { opacity: 1; transform: scaleY(1.2); }
-  100% { opacity: 0.3; transform: scaleY(0.8); }
+@keyframes sculkSignalPulse {
+  0% {
+    opacity: 0.25;
+    transform: translateY(-8px) scaleY(0.75);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(0px) scaleY(1.05);
+  }
+  85% {
+    opacity: 0.4;
+    transform: translateY(6px) scaleY(0.85);
+  }
+  100% {
+    opacity: 0.25;
+    transform: translateY(-8px) scaleY(0.75);
+  }
 }
 
 /* Portfolio Content */
@@ -472,16 +498,21 @@ h1, h2, h3 {
   letter-spacing: 2px;
   text-transform: uppercase;
   color: var(--ancient-cyan);
-  opacity: 0.92;
-  transition: all 0.25s ease;
+  opacity: 0.70;
+  transition: opacity 0.2s ease, color 0.2s ease;
   cursor: pointer;
   user-select: none;
 }
 
-.ui-nav:hover {
+.ui-nav:hover,
+.ui-nav:focus-visible {
   color: var(--ancient-cyan-bright);
   opacity: 1;
-  text-shadow: 0 0 10px rgba(0, 252, 240, 0.45);
+}
+
+.ui-nav.active {
+  color: var(--ancient-cyan-bright);
+  opacity: 1;
 }
 
 .ui-eyebrow {
@@ -678,6 +709,7 @@ h1, h2, h3 {
     left: max(18px, env(safe-area-inset-left)) !important;
     transform: scale(0.72) !important;
     transform-origin: bottom left !important;
+    z-index: 50 !important;
   }
 
   /* Hero Section Typography in compact landscape */
@@ -784,39 +816,48 @@ h1, h2, h3 {
   .nav-links span,
   .nav-links a {
     color: var(--ancient-cyan) !important;
-    opacity: 0.92;
+    opacity: 0.70;
     text-decoration: none;
     font-family: var(--font-sans);
     font-weight: 600;
     font-size: 14px !important;
     letter-spacing: 2px !important;
-    transition: all 0.25s ease;
+    transition: opacity 0.2s ease, color 0.2s ease;
     min-height: auto !important;
   }
 
   .nav-links span:hover,
-  .nav-links a:hover {
+  .nav-links a:hover,
+  .nav-links span:focus-visible,
+  .nav-links a:focus-visible {
     color: var(--ancient-cyan-bright) !important;
     opacity: 1;
-    text-shadow: 0 0 10px rgba(0, 252, 240, 0.45);
+  }
+
+  .nav-links span.active,
+  .nav-links a.active {
+    color: var(--ancient-cyan-bright) !important;
+    opacity: 1;
   }
 
   .scroll-indicator {
     position: fixed;
     bottom: 2rem !important;
     left: 4rem !important;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-    color: var(--ancient-cyan-muted) !important;
-    font-family: var(--font-sans);
-    font-weight: 600;
-    font-size: 10px;
-    letter-spacing: 2px;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 0.65rem !important;
     transform: none !important;
-    z-index: 10;
+    z-index: 50 !important;
     pointer-events: none;
+  }
+
+  .scroll-indicator span {
+    color: var(--text-primary) !important;
+    opacity: 0.95 !important;
+    font-size: 11px !important;
+    letter-spacing: 3px !important;
   }
 
   .hero-title {

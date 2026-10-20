@@ -9,6 +9,39 @@ import { useOrientation, requestFullscreenSafe, exitFullscreenSafe } from './hoo
 function App() {
   const { experienceMode, isTouchDevice, isLandscapePhone, isTabletLandscape, shouldShowRotateSplash, isFullscreen } = useOrientation();
   const [isFullscreenOverlayDismissed, setIsFullscreenOverlayDismissed] = useState(false);
+  const [activeSection, setActiveSection] = useState('');
+
+  // Active section indicator tracking
+  React.useEffect(() => {
+    let ticking = false;
+    const handleScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+          const p = maxScroll > 0 ? Math.min(1, Math.max(0, window.scrollY / maxScroll)) : 0;
+          if (p >= 0.78) {
+            setActiveSection('transmit');
+          } else if (p >= 0.60) {
+            setActiveSection('relics');
+          } else if (p >= 0.43) {
+            setActiveSection('network');
+          } else if (p >= 0.27) {
+            setActiveSection('archives');
+          } else if (p >= 0.13) {
+            setActiveSection('about');
+          } else {
+            setActiveSection('');
+          }
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const shouldShowFullscreenOverlay = isLandscapePhone && !shouldShowRotateSplash && !isFullscreen && !isFullscreenOverlayDismissed;
 
@@ -32,15 +65,30 @@ function App() {
         onDismiss={() => setIsFullscreenOverlayDismissed(true)}
       />
 
-      {/* Minimal Top Navigation */}
+      {/* 3D Journey & Portfolio Cards / Vignette (Canvas at z-index: 0, Overlay at z-index: 10) */}
+      <AncientCityJourney 
+        experienceMode={experienceMode}
+        isPaused={shouldShowRotateSplash}
+        isLandscapePhone={isLandscapePhone}
+        isTabletLandscape={isTabletLandscape}
+        isTouch={isTouchDevice}
+      />
+
+      {/* Subtle Scroll Indicator — Layered ABOVE cinematic tint / cards (z-index: 50) */}
+      <div className="scroll-indicator">
+        <div className="sculk-line"></div>
+        <span>DESCEND</span>
+      </div>
+
+      {/* Minimal Top Navigation — Highest UI layer (z-index: 100) */}
       <nav className="minimal-nav">
         <div className="nav-brand ui-brand" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} style={{ cursor: 'pointer' }}>{portfolioData.hero.title.toUpperCase()}</div>
         <div className="nav-links">
-          <span className="ui-nav" onClick={() => { const max = document.documentElement.scrollHeight - window.innerHeight; window.scrollTo({ top: max * 0.20, behavior: 'smooth' }); }}>ABOUT</span>
-          <span className="ui-nav" onClick={() => { const max = document.documentElement.scrollHeight - window.innerHeight; window.scrollTo({ top: max * 0.35, behavior: 'smooth' }); }}>ARCHIVES</span>
-          <span className="ui-nav" onClick={() => { const max = document.documentElement.scrollHeight - window.innerHeight; window.scrollTo({ top: max * 0.52, behavior: 'smooth' }); }}>NETWORK</span>
-          <span className="ui-nav" onClick={() => { const max = document.documentElement.scrollHeight - window.innerHeight; window.scrollTo({ top: max * 0.68, behavior: 'smooth' }); }}>RELICS</span>
-          <span className="ui-nav" onClick={() => { 
+          <span className={`ui-nav ${activeSection === 'about' ? 'active' : ''}`} onClick={() => { const max = document.documentElement.scrollHeight - window.innerHeight; window.scrollTo({ top: max * 0.20, behavior: 'smooth' }); }}>ABOUT</span>
+          <span className={`ui-nav ${activeSection === 'archives' ? 'active' : ''}`} onClick={() => { const max = document.documentElement.scrollHeight - window.innerHeight; window.scrollTo({ top: max * 0.35, behavior: 'smooth' }); }}>ARCHIVES</span>
+          <span className={`ui-nav ${activeSection === 'network' ? 'active' : ''}`} onClick={() => { const max = document.documentElement.scrollHeight - window.innerHeight; window.scrollTo({ top: max * 0.52, behavior: 'smooth' }); }}>NETWORK</span>
+          <span className={`ui-nav ${activeSection === 'relics' ? 'active' : ''}`} onClick={() => { const max = document.documentElement.scrollHeight - window.innerHeight; window.scrollTo({ top: max * 0.68, behavior: 'smooth' }); }}>RELICS</span>
+          <span className={`ui-nav ${activeSection === 'transmit' ? 'active' : ''}`} onClick={() => { 
             const max = document.documentElement.scrollHeight - window.innerHeight; 
             globalFlags.skipWardenCinematic = true;
             window.scrollTo({ top: max, behavior: 'smooth' }); 
@@ -67,21 +115,6 @@ function App() {
           )}
         </div>
       </nav>
-
-      {/* Subtle Scroll Indicator */}
-      <div className="scroll-indicator">
-        <div className="sculk-line"></div>
-        <span>DESCEND</span>
-      </div>
-
-      <AncientCityJourney 
-        experienceMode={experienceMode}
-        isPaused={shouldShowRotateSplash}
-        isLandscapePhone={isLandscapePhone}
-        isTabletLandscape={isTabletLandscape}
-        isTouch={isTouchDevice}
-      />
-
     </div>
   )
 }

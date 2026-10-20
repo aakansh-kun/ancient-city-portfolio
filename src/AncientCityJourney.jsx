@@ -709,15 +709,14 @@ const PortfolioOverlay = ({ experienceMode = 'desktop' }) => {
         if (globalFlags.skipWardenCinematic) {
           currentReveal = 1; // Instant reveal on direct navigation
         } else {
-          // Short pause (takes ~1.5s to reach 0), then fast fade in (~800ms to reach 1)
-          currentReveal += 0.02;
+          // Starts appearing right after Warden is fully summoned (p >= 0.94)
+          currentReveal += 0.035;
           if (currentReveal > 1) currentReveal = 1;
         }
       } else {
-        // Hide quickly if scrolled backwards
+        // Hide quickly if scrolled backwards; floor at 0 so it appears without delay upon summoning
         currentReveal -= 0.1;
-        // Floor it at -1.8 so it always waits exactly 1.5 seconds before fading in again (1.8 / 0.02 = 90 frames)
-        if (currentReveal < -1.8) currentReveal = -1.8;
+        if (currentReveal < 0) currentReveal = 0;
       }
 
       if (Math.abs(p - lastP) > 0.0001 || Math.abs(currentReveal - lastReveal) > 0.005) {
