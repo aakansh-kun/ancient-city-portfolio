@@ -1,46 +1,17 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React from 'react'
 import './App.css'
 import AncientCityJourney, { globalFlags } from './AncientCityJourney'
 import { portfolioData } from './portfolioData'
+import RotateDeviceScreen from './RotateDeviceScreen'
+import { useOrientation } from './hooks/useOrientation'
 
 function App() {
-  const [formStatus, setFormStatus] = useState('')
-  const [isChatOpen, setIsChatOpen] = useState(false)
-  const [chatMessages, setChatMessages] = useState([
-    { sender: 'paimon', text: '*Sculk sensor clicks* A vibration detected... Do you seek the archives?' }
-  ])
-  const [chatInput, setChatInput] = useState('')
-
-  const handleMailSubmit = (e) => {
-    e.preventDefault()
-    setFormStatus('Sending message...')
-    setTimeout(() => {
-      setFormStatus('Message transmitted successfully!')
-      e.target.reset()
-    }, 1500)
-  }
-
-  const toggleChat = () => setIsChatOpen(!isChatOpen)
-
-  const handleChatSubmit = (e) => {
-    e.preventDefault()
-    if (!chatInput.trim()) return
-
-    setChatMessages([...chatMessages, { sender: 'user', text: chatInput }])
-    
-    setTimeout(() => {
-      setChatMessages(prev => [...prev, { 
-        sender: 'paimon', 
-        text: '*Vibration echoes* I have recorded your signal. The Deep Dark listens.' 
-      }])
-    }, 1000)
-    
-    setChatInput('')
-  }
+  const { isTouchDevice, isLandscapePhone, isTabletLandscape, shouldShowRotateSplash } = useOrientation();
 
   return (
-    <div className="minecraft-wrapper">
-      {/* 3D Cinematic Scroll Journey Wrapper */}
+    <div className={`minecraft-wrapper ${isLandscapePhone ? 'compact-landscape-phone' : ''}`}>
+      {/* Rotate Device Screen (Cinematic Deep Dark splash for touch portrait) */}
+      <RotateDeviceScreen isVisible={shouldShowRotateSplash} />
 
       {/* Minimal Top Navigation */}
       <nav className="minimal-nav">
@@ -64,12 +35,16 @@ function App() {
         <span>DESCEND</span>
       </div>
 
-
-
-      <AncientCityJourney />
+      <AncientCityJourney 
+        isPaused={shouldShowRotateSplash}
+        isLandscapePhone={isLandscapePhone}
+        isTabletLandscape={isTabletLandscape}
+        isTouch={isTouchDevice}
+      />
 
     </div>
   )
 }
 
 export default App
+

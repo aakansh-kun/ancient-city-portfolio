@@ -27,3 +27,5 @@ original_code.json
 *.njsproj
 *.sln
 *.sw?
+
+.vercel

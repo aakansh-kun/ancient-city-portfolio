@@ -457,3 +457,127 @@ h1, h2, h3 {
   0% { box-shadow: 0 0 8px rgba(0, 252, 240, 0.05) !important; }
   100% { box-shadow: 0 0 12px rgba(0, 252, 240, 0.15) !important; }
 }
+
+/* ============================================================
+   MOBILE LANDSCAPE COMPACT UI MODE
+   Dedicated compact tokens & density for short-height landscape phones (height <= 500px).
+   Desktop (>= 1200px / height > 500px) and Tablet Landscape (1024x768, 1180x820)
+   remain 100% LOCKED / UNTOUCHED.
+   ============================================================ */
+@media (orientation: landscape) and (max-height: 500px) {
+  :root {
+    --ui-title: clamp(26px, 4.2vw, 36px);
+    --ui-heading: clamp(18px, 2.5vw, 21px);
+    --ui-body: clamp(13px, 1.6vw, 14px);
+    --ui-small: clamp(11px, 1.3vw, 13px);
+    --panel-padding: 18px 22px;
+    --panel-gap: 8px;
+    --nav-height: 56px;
+  }
+
+  /* Minimal Top Navigation — compact & collision-proof */
+  .minimal-nav {
+    padding-top: max(18px, env(safe-area-inset-top)) !important;
+    padding-right: max(28px, env(safe-area-inset-right)) !important;
+    padding-bottom: 8px !important;
+    padding-left: max(24px, env(safe-area-inset-left)) !important;
+    height: 56px !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    z-index: 200 !important;
+  }
+
+  .nav-brand {
+    font-size: 17px !important;
+    letter-spacing: 2px !important;
+    line-height: 1 !important;
+  }
+
+  .nav-links {
+    gap: 20px !important;
+  }
+
+  .nav-links span,
+  .nav-links a {
+    font-size: 13px !important;
+    letter-spacing: 1px !important;
+    min-height: 32px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+  }
+
+  /* Descend Indicator — scaled down ~28%, clear of notch & screen bounds */
+  .scroll-indicator {
+    bottom: max(14px, env(safe-area-inset-bottom)) !important;
+    left: max(18px, env(safe-area-inset-left)) !important;
+    transform: scale(0.72) !important;
+    transform-origin: bottom left !important;
+  }
+
+  /* Hero Section Typography in compact landscape */
+  .hero-title {
+    font-size: clamp(26px, 6.5vh, 32px) !important;
+    line-height: 1.1 !important;
+    letter-spacing: 2px !important;
+  }
+
+  .hero-subtitle {
+    font-size: 13px !important;
+    margin-top: 0.35rem !important;
+    letter-spacing: 1.5px !important;
+  }
+
+  .hero-desc {
+    font-size: 13.5px !important;
+    line-height: 1.42 !important;
+    margin-top: 0.45rem !important;
+    max-width: 400px !important;
+  }
+
+  .section-label {
+    font-size: 13px !important;
+    letter-spacing: 0.22em !important;
+    margin-bottom: 8px !important;
+  }
+
+  /* Custom scrollbar for scrollable cards in short landscape */
+  .responsive-card-scroll::-webkit-scrollbar {
+    width: 4px;
+  }
+  .responsive-card-scroll::-webkit-scrollbar-thumb {
+    background: var(--sculk-blue);
+    border-radius: 2px;
+  }
+}
+
+/* ============================================================
+   TABLET LANDSCAPE (768px – 1199px width, height > 500px)
+   Proportional comfort scaling for widescreen tablets
+   ============================================================ */
+@media (orientation: landscape) and (min-height: 501px) and (max-width: 1199px) {
+  .minimal-nav {
+    padding: 1.25rem 2.5rem;
+    padding-left: max(2.5rem, env(safe-area-inset-left));
+    padding-right: max(2.5rem, env(safe-area-inset-right));
+    padding-top: max(1.25rem, env(safe-area-inset-top));
+  }
+
+  .nav-brand {
+    font-size: 1.05rem;
+  }
+
+  .nav-links {
+    gap: 1.4rem;
+  }
+
+  .hero-title {
+    font-size: clamp(48px, 6vw, 68px) !important;
+  }
+
+  .hero-subtitle {
+    font-size: 18px !important;
+  }
+}
+
+

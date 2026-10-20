@@ -245,7 +245,7 @@ const EnvironmentProgression = () => {
 };
 
 // Very sparse, dark cyan dust
-const Particles = () => {
+const Particles = ({ isPaused = false }) => {
   const count = 1000;
   const positions = useMemo(() => {
     const pos = new Float32Array(count * 3);
@@ -255,10 +255,11 @@ const Particles = () => {
       pos[i * 3 + 2] = 10 - Math.random() * 150;
     }
     return pos;
-  }, []);
+  }, [count]);
 
   const pointsRef = useRef();
   useFrame((state) => {
+    if (isPaused) return;
     pointsRef.current.rotation.y = state.clock.elapsedTime * 0.02;
     // Particles get slightly more noticeable deeper in
     pointsRef.current.material.opacity = THREE.MathUtils.lerp(0.3, 0.7, scrollProgress.smooth);
@@ -281,10 +282,12 @@ const START_Z = 15;
 const LEGACY_Z_AT_75 = 15 - 135 * 0.75; // -86.25 (Ensures original sections stay exactly the same up to 0.75)
 const FINAL_CAMERA_Z = -100; // The absolute final stop
 
-const CinematicCamera = () => {
+const CinematicCamera = ({ isPaused = false, isTouch = false }) => {
   const lightRef = React.useRef();
 
   useFrame((state) => {
+    if (isPaused) return;
+
     // Smooth the progress with lerp for cinematic inertia
     scrollProgress.smooth += (scrollProgress.target - scrollProgress.smooth) * 0.08;
 
@@ -293,8 +296,7 @@ const CinematicCamera = () => {
     const aspect = state.viewport.width / state.viewport.height;
 
     // Dynamically calculate the final camera distance. 
-    // Warden is at Z = -106.5. 
-    // Bringing camera closer to make Warden 25-35% larger (Distance ~6.0 instead of 8.0).
+    // Warden is at Z = -106.5.
     const dynamicFinalZ = aspect < 1.2 ? -99.2 : -100.5;
 
     if (progress <= 0.75) {
@@ -325,10 +327,11 @@ const CinematicCamera = () => {
     let shakeX = 0;
     let shakeY = 0;
     if (progress > 0.81 && progress < 0.86) {
-      // Two subtle thumps in the anticipation zone
+      // Two subtle thumps in the anticipation zone (slightly dampened on touch)
+      const shakeAmp = isTouch ? 0.015 : 0.03;
       if (Math.abs(progress - 0.82) < 0.005 || Math.abs(progress - 0.85) < 0.005) {
-        shakeX = (Math.random() - 0.5) * 0.03;
-        shakeY = (Math.random() - 0.5) * 0.03;
+        shakeX = (Math.random() - 0.5) * shakeAmp;
+        shakeY = (Math.random() - 0.5) * shakeAmp;
       }
     }
 
@@ -339,9 +342,9 @@ const CinematicCamera = () => {
     state.camera.rotation.x = -0.08;
 
     // Shift slightly to keep Warden on the left side of the screen
-    // Subtle pointer parallax when stationary
-    const parallaxOffset = (progress > 0.94) ? (state.mouse.x * 0.5) : 0;
-    const targetX = (state.mouse.x * 0.3 + 0.5) + parallaxOffset;
+    // Dampen pointer parallax on touch devices
+    const parallaxOffset = isTouch ? 0 : ((progress > 0.94) ? (state.mouse.x * 0.5) : 0);
+    const targetX = isTouch ? 0.4 : ((state.mouse.x * 0.3 + 0.5) + parallaxOffset);
     state.camera.position.x = THREE.MathUtils.lerp(state.camera.position.x, targetX, 0.02) + shakeX;
 
     if (lightRef.current) {
@@ -355,7 +358,7 @@ const CinematicCamera = () => {
 // ============================================================
 // SculkEcho Chatbot
 // ============================================================
-const SculkEcho = () => {
+const SculkEcho = ({ isLandscapePhone = false }) => {
   const [isOpen, setIsOpen] = React.useState(false);
   const [isHovered, setIsHovered] = React.useState(false);
   const [messages, setMessages] = React.useState([
@@ -388,28 +391,59 @@ const SculkEcho = () => {
 
   // Only pointer events for the chatbot wrapper itself
   return (
-    <div style={{ position: 'fixed', bottom: '2rem', right: '2rem', zIndex: 100, pointerEvents: 'none' }}>
+    <div style={{
+      position: 'fixed',
+      bottom: isLandscapePhone ? 'max(12px, env(safe-area-inset-bottom))' : '2rem',
+      right: isLandscapePhone ? 'max(16px, env(safe-area-inset-right))' : '2rem',
+      zIndex: 100,
+      pointerEvents: 'none'
+    }}>
       {isOpen && (
         <div style={{
-          width: '360px', height: '500px', marginBottom: '1rem',
-          background: 'rgba(2, 4, 6, 0.9)', border: '1px solid var(--sculk-blue)',
-          borderRadius: '8px', display: 'flex', flexDirection: 'column', pointerEvents: 'auto',
-          boxShadow: '0 0 20px rgba(0, 252, 240, 0.1)', overflow: 'hidden'
+          width: isLandscapePhone ? 'min(300px, calc(100vw - 32px))' : '360px',
+          height: isLandscapePhone ? 'min(240px, calc(100dvh - 70px))' : '500px',
+          marginBottom: isLandscapePhone ? '0.4rem' : '1rem',
+          background: 'rgba(2, 4, 6, 0.94)',
+          border: '1px solid var(--sculk-blue)',
+          borderRadius: '8px',
+          display: 'flex',
+          flexDirection: 'column',
+          pointerEvents: 'auto',
+          boxShadow: '0 0 20px rgba(0, 252, 240, 0.1)',
+          overflow: 'hidden'
         }}>
           {/* Header */}
-          <div style={{ padding: '1rem', background: 'rgba(0, 252, 240, 0.1)', borderBottom: '1px solid var(--sculk-blue)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ color: 'var(--sculk-cyan)', fontFamily: 'Cinzel, serif', letterSpacing: '2px' }}>SCULK ECHO</span>
-            <button onClick={() => setIsOpen(false)} style={{ color: '#fff', background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px' }}>✕</button>
+          <div style={{
+            padding: isLandscapePhone ? '0.4rem 0.75rem' : '1rem',
+            background: 'rgba(0, 252, 240, 0.1)',
+            borderBottom: '1px solid var(--sculk-blue)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}>
+            <span style={{ color: 'var(--sculk-cyan)', fontFamily: 'Cinzel, serif', letterSpacing: '2px', fontSize: isLandscapePhone ? '12px' : '14px' }}>SCULK ECHO</span>
+            <button onClick={() => setIsOpen(false)} style={{ color: '#fff', background: 'none', border: 'none', cursor: 'pointer', fontSize: isLandscapePhone ? '16px' : '18px', padding: '4px' }}>✕</button>
           </div>
 
           {/* Messages */}
-          <div style={{ flex: 1, padding: '1rem', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div style={{
+            flex: 1,
+            padding: isLandscapePhone ? '0.5rem 0.75rem' : '1rem',
+            overflowY: 'auto',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: isLandscapePhone ? '0.5rem' : '1rem'
+          }}>
             {messages.map((msg, i) => (
               <div key={i} style={{
                 alignSelf: msg.sender === 'user' ? 'flex-end' : 'flex-start',
                 background: msg.sender === 'user' ? 'rgba(0, 252, 240, 0.15)' : 'rgba(255, 255, 255, 0.05)',
                 color: msg.sender === 'user' ? '#fff' : '#c0cdd1',
-                padding: '0.75rem 1rem', borderRadius: '4px', maxWidth: '80%', fontSize: '14px', lineHeight: '1.5',
+                padding: isLandscapePhone ? '0.4rem 0.7rem' : '0.75rem 1rem',
+                borderRadius: '4px',
+                maxWidth: '85%',
+                fontSize: isLandscapePhone ? '12px' : '14px',
+                lineHeight: '1.45',
                 borderLeft: msg.sender === 'paimon' ? '2px solid var(--sculk-cyan)' : 'none',
                 borderRight: msg.sender === 'user' ? '2px solid var(--sculk-blue)' : 'none'
               }}>
@@ -419,16 +453,30 @@ const SculkEcho = () => {
           </div>
 
           {/* Input */}
-          <div style={{ padding: '1rem', borderTop: '1px solid rgba(0,252,240,0.2)', display: 'flex', gap: '0.5rem' }}>
+          <div style={{
+            padding: isLandscapePhone ? '0.4rem 0.75rem' : '1rem',
+            borderTop: '1px solid rgba(0,252,240,0.2)',
+            display: 'flex',
+            gap: '0.5rem'
+          }}>
             <input
               type="text"
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSend()}
               placeholder="Send a vibration..."
-              style={{ flex: 1, background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(0,252,240,0.3)', color: '#fff', padding: '0.5rem 1rem', borderRadius: '4px', outline: 'none' }}
+              style={{
+                flex: 1,
+                background: 'rgba(0,0,0,0.5)',
+                border: '1px solid rgba(0,252,240,0.3)',
+                color: '#fff',
+                padding: isLandscapePhone ? '0.3rem 0.6rem' : '0.5rem 1rem',
+                fontSize: isLandscapePhone ? '13px' : '14px',
+                borderRadius: '4px',
+                outline: 'none'
+              }}
             />
-            <button onClick={handleSend} style={{ background: 'rgba(0,252,240,0.1)', border: '1px solid var(--sculk-cyan)', color: 'var(--sculk-cyan)', padding: '0.5rem 1rem', borderRadius: '4px', cursor: 'pointer' }}>→</button>
+            <button onClick={handleSend} style={{ background: 'rgba(0,252,240,0.1)', border: '1px solid var(--sculk-cyan)', color: 'var(--sculk-cyan)', padding: isLandscapePhone ? '0.3rem 0.75rem' : '0.5rem 1rem', borderRadius: '4px', cursor: 'pointer' }}>→</button>
           </div>
         </div>
       )}
@@ -439,36 +487,48 @@ const SculkEcho = () => {
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        <div style={{
-          position: 'absolute',
-          right: 'calc(100% + 12px)',
-          border: '1px solid var(--sculk-cyan)',
-          padding: '10px 16px',
-          background: 'rgba(2, 4, 6, 0.95)',
-          color: 'var(--sculk-cyan)',
-          fontSize: '13px',
-          whiteSpace: 'nowrap',
-          pointerEvents: 'none',
-          fontFamily: 'Nunito, sans-serif',
-          boxShadow: '0 0 10px rgba(0, 252, 240, 0.1)',
-          textAlign: 'left',
-          lineHeight: '1.6',
-          opacity: (!isOpen && isHovered) ? 1 : 0,
-          transform: (!isOpen && isHovered) ? 'translateX(0) scale(1)' : 'translateX(10px) scale(0.95)',
-          visibility: (!isOpen && isHovered) ? 'visible' : 'hidden',
-          transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
-          transformOrigin: 'right center'
-        }}>
-          Sculk Sensor<br />(Click to Transmit!)
-        </div>
+        {!isLandscapePhone && (
+          <div style={{
+            position: 'absolute',
+            right: 'calc(100% + 12px)',
+            border: '1px solid var(--sculk-cyan)',
+            padding: '10px 16px',
+            background: 'rgba(2, 4, 6, 0.95)',
+            color: 'var(--sculk-cyan)',
+            fontSize: '13px',
+            whiteSpace: 'nowrap',
+            pointerEvents: 'none',
+            fontFamily: 'Nunito, sans-serif',
+            boxShadow: '0 0 10px rgba(0, 252, 240, 0.1)',
+            textAlign: 'left',
+            lineHeight: '1.6',
+            opacity: (!isOpen && isHovered) ? 1 : 0,
+            transform: (!isOpen && isHovered) ? 'translateX(0) scale(1)' : 'translateX(10px) scale(0.95)',
+            visibility: (!isOpen && isHovered) ? 'visible' : 'hidden',
+            transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
+            transformOrigin: 'right center'
+          }}>
+            Sculk Sensor<br />(Click to Transmit!)
+          </div>
+        )}
         <button
           className="chatbot-launcher"
           onClick={() => setIsOpen(!isOpen)}
           style={{
-            width: '56px', height: '56px', borderRadius: '50%', background: '#000',
-            color: 'var(--sculk-cyan)', fontSize: '24px',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', pointerEvents: 'auto',
-            transition: 'all 0.3s ease', overflow: 'hidden', padding: 0
+            width: isLandscapePhone ? '46px' : '56px',
+            height: isLandscapePhone ? '46px' : '56px',
+            borderRadius: '50%',
+            background: '#000',
+            color: 'var(--sculk-cyan)',
+            fontSize: '24px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            pointerEvents: 'auto',
+            transition: 'all 0.3s ease',
+            overflow: 'hidden',
+            padding: 0
           }}
         >
           <video src="/mini-warden.mp4" autoPlay loop muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -481,12 +541,15 @@ const SculkEcho = () => {
 // Removed getActiveSection since we use continuous interpolation now
 
 // ============================================================
+// ============================================================
 // PortfolioOverlay — pure DOM, reads scrollProgress via rAF
 // ============================================================
-const PortfolioOverlay = () => {
+const PortfolioOverlay = ({ isLandscapePhone = false, isSmallLandscape = false, isTabletLandscape = false, isTouch = false }) => {
+  const isCompact = isLandscapePhone || isSmallLandscape;
   const [progress, setProgress] = React.useState(0);
   const [transmitReveal, setTransmitReveal] = React.useState(0);
   const [formFeedback, setFormFeedback] = React.useState({ state: 'idle', message: '' });
+  const [isKeyboardActive, setIsKeyboardActive] = React.useState(false);
 
   React.useEffect(() => {
     let raf;
@@ -525,8 +588,6 @@ const PortfolioOverlay = () => {
     return () => cancelAnimationFrame(raf);
   }, []);
 
-
-
   const basePanelStyle = {
     background: 'rgba(2, 8, 10, 0.72)',
     backdropFilter: 'blur(10px)',
@@ -534,25 +595,40 @@ const PortfolioOverlay = () => {
     border: '1px solid rgba(0, 220, 210, 0.15)',
     boxShadow: 'inset 0 0 20px rgba(0, 220, 210, 0.05), 0 20px 60px rgba(0, 0, 0, 0.25)',
     borderRadius: '8px',
-    padding: '32px 36px',
-    pointerEvents: 'auto'
+    padding: isCompact ? '18px 22px' : '32px 36px',
+    pointerEvents: 'auto',
+    boxSizing: 'border-box'
   };
 
   const transmitPanelStyle = {
     ...basePanelStyle,
     background: 'rgba(2, 9, 11, 0.78)',
     border: '1px solid rgba(0, 220, 210, 0.18)',
-    padding: '36px 40px 34px'
+    padding: isCompact ? '18px 20px' : '36px 40px 34px'
   };
 
   // Continuous opacity and subtle translation based on camera proximity
   const sectionStyle = (name, align = 'left') => {
+    const topSafeZone = isCompact ? 'max(60px, calc(env(safe-area-inset-top) + 56px))' : '0';
+    const bottomSafeZone = isCompact ? 'max(14px, env(safe-area-inset-bottom))' : '0';
+
     // Custom transmit reveal logic tied directly to Warden completion
     if (name === 'contact') {
       return {
-        position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
-        display: 'flex', flexDirection: 'column', justifyContent: 'center',
-        padding: '0 10vw 0 50vw', textAlign: 'right',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        paddingTop: topSafeZone,
+        paddingBottom: bottomSafeZone,
+        paddingLeft: isCompact ? '52vw' : '50vw',
+        paddingRight: isCompact ? 'max(4.5vw, env(safe-area-inset-right))' : '10vw',
+        boxSizing: 'border-box',
+        textAlign: 'right',
         opacity: transmitReveal,
         transform: `translateY(${16 * (1 - transmitReveal)}px)`,
         pointerEvents: transmitReveal > 0.5 ? 'auto' : 'none',
@@ -582,6 +658,18 @@ const PortfolioOverlay = () => {
       translateY = (progress - center) > 0 ? (normalized * -10) : (normalized * 10);
     }
 
+    let paddingLeft, paddingRight;
+    if (align === 'right') {
+      paddingLeft = isCompact ? '50vw' : '50vw';
+      paddingRight = isCompact ? 'max(4.5vw, env(safe-area-inset-right))' : '10vw';
+    } else if (align === 'center') {
+      paddingLeft = isCompact ? 'max(24px, env(safe-area-inset-left))' : '15vw';
+      paddingRight = isCompact ? 'max(24px, env(safe-area-inset-right))' : '15vw';
+    } else { // left
+      paddingLeft = isCompact ? 'max(24px, env(safe-area-inset-left))' : '10vw';
+      paddingRight = isCompact ? '50vw' : '50vw';
+    }
+
     return {
       position: 'absolute',
       top: 0,
@@ -591,7 +679,11 @@ const PortfolioOverlay = () => {
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'center',
-      padding: align === 'right' ? '0 10vw 0 50vw' : align === 'center' ? '0 15vw' : '0 50vw 0 10vw',
+      paddingTop: topSafeZone,
+      paddingBottom: bottomSafeZone,
+      paddingLeft,
+      paddingRight,
+      boxSizing: 'border-box',
       textAlign: align === 'right' ? 'right' : align === 'center' ? 'center' : 'left',
       opacity,
       transform: `translateY(${translateY}px)`,
@@ -602,40 +694,52 @@ const PortfolioOverlay = () => {
   };
 
   return (
-    <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', pointerEvents: 'none', zIndex: 10 }}>
+    <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100dvh', pointerEvents: 'none', zIndex: 10 }}>
 
       {/* HERO — 0 to 14% */}
       <div style={sectionStyle('hero', 'left')}>
-        <div style={{ position: 'absolute', top: 0, left: 0, width: '60vw', height: '100vh', background: 'linear-gradient(to right, rgba(2,4,6,0.85) 0%, rgba(2,4,6,0) 100%)', zIndex: -1 }}></div>
-        <h1 className="hero-title">{portfolioData.hero.title}</h1>
-        <h2 className="hero-subtitle">{portfolioData.hero.subtitle}</h2>
-        <p className="hero-desc">{portfolioData.hero.desc}</p>
-        <div style={{ display: 'flex', gap: '2rem', marginTop: '2rem', alignItems: 'center' }}>
-          <span style={{ color: 'var(--sculk-blue)', letterSpacing: '2px', fontSize: '12px' }}>SCROLL TO EXPLORE ↓</span>
-          <a href={portfolioData.hero.resumeUrl} target="_blank" rel="noreferrer" className="cinematic-link" style={{ letterSpacing: '2px', fontSize: '12px', pointerEvents: 'auto' }}>DOWNLOAD RESUME</a>
+        <div style={{ position: 'absolute', top: 0, left: 0, width: isCompact ? '48vw' : '60vw', height: '100vh', background: 'linear-gradient(to right, rgba(2,4,6,0.85) 0%, rgba(2,4,6,0) 100%)', zIndex: -1 }}></div>
+        <div style={{ maxWidth: isCompact ? 'min(440px, 46vw)' : '800px' }}>
+          <h1 className="hero-title">{portfolioData.hero.title}</h1>
+          <h2 className="hero-subtitle">{portfolioData.hero.subtitle}</h2>
+          <p className="hero-desc">{portfolioData.hero.desc}</p>
+          <div style={{ display: 'flex', gap: isCompact ? '1.2rem' : '2rem', marginTop: isCompact ? '0.8rem' : '2rem', alignItems: 'center' }}>
+            <span style={{ color: 'var(--sculk-blue)', letterSpacing: '2px', fontSize: isCompact ? '11px' : '12px' }}>SCROLL TO EXPLORE ↓</span>
+            <a href={portfolioData.hero.resumeUrl} target="_blank" rel="noreferrer" className="cinematic-link" style={{ letterSpacing: '2px', fontSize: isCompact ? '11px' : '12px', pointerEvents: 'auto', minHeight: isCompact ? '34px' : '40px', display: 'inline-flex', alignItems: 'center' }}>DOWNLOAD RESUME</a>
+          </div>
         </div>
       </div>
 
       {/* ABOUT — 14 to 28% */}
       <div style={sectionStyle('about', 'right')}>
-        <div style={{ ...basePanelStyle, maxWidth: '600px', marginLeft: 'auto', textAlign: 'left' }}>
-          <h2 className="section-label">01 / ABOUT</h2>
-          <h3 style={{ fontSize: '32px', color: '#fff', fontFamily: 'Cinzel, serif', marginBottom: '1rem' }}>{portfolioData.about.title}</h3>
-          <p className="hero-desc" style={{ fontSize: '16px', lineHeight: '1.6' }}>{portfolioData.about.desc}</p>
+        <div style={{ ...basePanelStyle, width: isCompact ? 'min(44vw, 480px)' : 'auto', maxWidth: isCompact ? 'min(44vw, 480px)' : '600px', marginLeft: 'auto', textAlign: 'left' }}>
+          <h2 className="section-label" style={{ fontSize: isCompact ? '12px' : '14px', letterSpacing: isCompact ? '0.22em' : '4px', marginBottom: isCompact ? '6px' : '1rem' }}>01 / ABOUT</h2>
+          <h3 style={{ fontSize: isCompact ? '22px' : '32px', color: '#fff', fontFamily: 'Cinzel, serif', marginBottom: isCompact ? '6px' : '1rem', lineHeight: 1.15 }}>{portfolioData.about.title}</h3>
+          <p className="hero-desc" style={{ fontSize: isCompact ? '13.5px' : '16px', lineHeight: isCompact ? '1.42' : '1.6', margin: 0, maxWidth: '100%' }}>{portfolioData.about.desc}</p>
         </div>
       </div>
 
       {/* EXPERIENCE — 28 to 45% */}
       <div style={sectionStyle('experience', 'left')}>
-        <div style={{ ...basePanelStyle, maxWidth: '700px' }}>
-          <h2 className="section-label">02 / ANCIENT ARCHIVES</h2>
+        <div 
+          style={{ 
+            ...basePanelStyle, 
+            width: isCompact ? 'min(44vw, 500px)' : 'auto',
+            maxWidth: isCompact ? 'min(44vw, 500px)' : '700px',
+            maxHeight: isCompact ? '74dvh' : 'none',
+            overflowY: isCompact ? 'auto' : 'visible'
+          }}
+          className={isCompact ? 'responsive-card-scroll' : ''}
+          onTouchMove={e => e.stopPropagation()}
+        >
+          <h2 className="section-label" style={{ fontSize: isCompact ? '13px' : '14px', letterSpacing: isCompact ? '0.22em' : '4px', marginBottom: isCompact ? '8px' : '1rem' }}>02 / ANCIENT ARCHIVES</h2>
           {portfolioData.experience.map((exp, i) => (
-            <div key={i} style={{ marginTop: i > 0 ? '2rem' : '1rem' }}>
-              <h3 style={{ fontSize: '24px', color: '#fff', fontFamily: 'Cinzel, serif', textTransform: 'uppercase' }}>{exp.title}</h3>
-              <p style={{ color: 'var(--sculk-cyan)', letterSpacing: '2px', fontSize: '14px', textTransform: 'uppercase', marginBottom: '0.5rem' }}>{exp.company}</p>
-              <p style={{ color: 'var(--sculk-blue)', fontSize: '12px', letterSpacing: '1px' }}>{exp.date}</p>
-              <p style={{ marginTop: '0.5rem', color: '#c0cdd1', fontSize: '15px', lineHeight: '1.7' }}>{exp.desc}</p>
-              <p style={{ marginTop: '0.5rem', color: 'var(--sculk-cyan)', fontSize: '12px', letterSpacing: '2px' }}>{exp.tech}</p>
+            <div key={i} style={{ marginTop: i > 0 ? (isCompact ? '18px' : '2rem') : (isCompact ? '4px' : '1rem') }}>
+              <h3 style={{ fontSize: isCompact ? '19px' : '24px', color: '#fff', fontFamily: 'Cinzel, serif', textTransform: 'uppercase', marginBottom: isCompact ? '4px' : '0.5rem', lineHeight: 1.2 }}>{exp.title}</h3>
+              <p style={{ color: 'var(--sculk-cyan)', letterSpacing: '2px', fontSize: isCompact ? '14px' : '14px', textTransform: 'uppercase', marginBottom: isCompact ? '6px' : '0.5rem' }}>{exp.company}</p>
+              <p style={{ color: 'var(--sculk-blue)', fontSize: isCompact ? '12px' : '12px', letterSpacing: '1px', marginBottom: isCompact ? '10px' : '0.5rem' }}>{exp.date}</p>
+              <p style={{ color: '#c0cdd1', fontSize: isCompact ? '13.5px' : '15px', lineHeight: isCompact ? '1.4' : '1.7', marginBottom: isCompact ? '8px' : '0.5rem' }}>{exp.desc}</p>
+              <p style={{ color: 'var(--sculk-cyan)', fontSize: isCompact ? '12px' : '12px', letterSpacing: '2px', margin: 0 }}>{exp.tech}</p>
             </div>
           ))}
         </div>
@@ -643,11 +747,25 @@ const PortfolioOverlay = () => {
 
       {/* SKILLS — 45 to 60% */}
       <div style={sectionStyle('skills', 'center')}>
-        <div style={{ ...basePanelStyle, maxWidth: '800px', margin: '0 auto' }}>
-          <h2 className="section-label">03 / SCULK NETWORK</h2>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.5rem', justifyContent: 'center', marginTop: '2rem' }}>
+        <div style={{ ...basePanelStyle, width: isCompact ? 'min(62vw, 580px)' : 'auto', maxWidth: isCompact ? 'min(62vw, 580px)' : '800px', margin: '0 auto' }}>
+          <h2 className="section-label" style={{ fontSize: isCompact ? '13px' : '14px', letterSpacing: isCompact ? '0.22em' : '4px', marginBottom: isCompact ? '10px' : '2rem' }}>03 / SCULK NETWORK</h2>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: isCompact ? '8px 10px' : '1.5rem', justifyContent: 'center', marginTop: isCompact ? '6px' : '2rem' }}>
             {portfolioData.skills.map((skill, i) => (
-              <span key={i} style={{ padding: '0.4rem 1rem', color: '#fff', letterSpacing: '2px', fontSize: '16px', textShadow: '0 0 10px var(--sculk-cyan)', border: '1px solid rgba(0,252,240,0.2)', borderRadius: '2px' }}>{skill}</span>
+              <span key={i} style={{ 
+                height: isCompact ? '34px' : 'auto',
+                minHeight: isCompact ? '34px' : 'auto',
+                padding: isCompact ? '0 12px' : '0.4rem 1rem', 
+                color: '#fff', 
+                letterSpacing: isCompact ? '1.5px' : '2px', 
+                fontSize: isCompact ? '12px' : '16px', 
+                textShadow: '0 0 10px var(--sculk-cyan)', 
+                border: '1px solid rgba(0,252,240,0.2)', 
+                borderRadius: '4px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxSizing: 'border-box'
+              }}>{skill}</span>
             ))}
           </div>
         </div>
@@ -655,15 +773,35 @@ const PortfolioOverlay = () => {
 
       {/* PROJECTS — 60 to 77% */}
       <div style={sectionStyle('projects', 'center')}>
-        <h2 className="section-label" style={{ marginBottom: '2rem' }}>04 / ANCIENT RELICS</h2>
+        <h2 className="section-label" style={{ 
+          fontSize: isCompact ? '13px' : '14px', 
+          letterSpacing: isCompact ? '0.22em' : '4px', 
+          marginTop: isCompact ? '12px' : '0',
+          marginBottom: isCompact ? '8px' : '2rem' 
+        }}>04 / ANCIENT RELICS</h2>
         {portfolioData.projects.map((proj, i) => (
-          <div key={i} style={{ ...basePanelStyle, marginTop: i > 0 ? '2.5rem' : '0', textAlign: 'left', maxWidth: '600px', alignSelf: i % 2 === 0 ? 'flex-end' : 'flex-start' }}>
-            <h3 style={{ fontSize: '28px', color: '#fff', fontFamily: 'Cinzel, serif', textTransform: 'uppercase' }}>{proj.title}</h3>
-            <p style={{ margin: '0.5rem 0', color: '#c0cdd1', fontSize: '15px', lineHeight: '1.7' }}>{proj.desc}</p>
-            <p style={{ fontSize: '12px', color: 'var(--sculk-cyan)', letterSpacing: '2px', marginBottom: '1rem' }}>{proj.tech}</p>
-            <div style={{ display: 'flex', gap: '2rem' }}>
-              <a href={proj.link} className="cinematic-link" style={{ fontSize: '13px', letterSpacing: '1px' }}>VIEW PROJECT →</a>
-              <a href={proj.source} className="cinematic-link" style={{ fontSize: '13px', letterSpacing: '1px' }}>VIEW SOURCE →</a>
+          <div 
+            key={i} 
+            style={{ 
+              ...basePanelStyle, 
+              padding: isCompact ? '16px 18px' : '32px 36px',
+              marginTop: i > 0 ? (isCompact ? '6px' : '2.5rem') : '0', 
+              textAlign: 'left', 
+              width: isCompact ? 'min(44vw, 440px)' : 'auto',
+              maxWidth: isCompact ? 'min(44vw, 440px)' : '600px', 
+              maxHeight: isCompact ? '42dvh' : 'none',
+              overflowY: isCompact ? 'auto' : 'visible',
+              alignSelf: i % 2 === 0 ? 'flex-end' : 'flex-start' 
+            }}
+            className={isCompact ? 'responsive-card-scroll' : ''}
+            onTouchMove={e => e.stopPropagation()}
+          >
+            <h3 style={{ fontSize: isCompact ? '19px' : '28px', color: '#fff', fontFamily: 'Cinzel, serif', textTransform: 'uppercase', marginBottom: isCompact ? '4px' : '0.5rem', lineHeight: 1.2 }}>{proj.title}</h3>
+            <p style={{ margin: isCompact ? '4px 0' : '0.5rem 0', color: '#c0cdd1', fontSize: isCompact ? '13.5px' : '15px', lineHeight: isCompact ? '1.4' : '1.7' }}>{proj.desc}</p>
+            <p style={{ fontSize: isCompact ? '11.5px' : '12px', color: 'var(--sculk-cyan)', letterSpacing: '2px', margin: isCompact ? '4px 0 8px' : '0.5rem 0 1rem' }}>{proj.tech}</p>
+            <div style={{ display: 'flex', gap: isCompact ? '1.2rem' : '2rem' }}>
+              <a href={proj.link} className="cinematic-link" style={{ fontSize: isCompact ? '12px' : '13px', letterSpacing: '1px', minHeight: isCompact ? '32px' : '40px', display: 'inline-flex', alignItems: 'center' }}>VIEW PROJECT →</a>
+              <a href={proj.source} className="cinematic-link" style={{ fontSize: isCompact ? '12px' : '13px', letterSpacing: '1px', minHeight: isCompact ? '32px' : '40px', display: 'inline-flex', alignItems: 'center' }}>VIEW SOURCE →</a>
             </div>
           </div>
         ))}
@@ -671,13 +809,41 @@ const PortfolioOverlay = () => {
 
       {/* CONTACT — 92 to 100% */}
       <div style={sectionStyle('contact', 'right')}>
-        <div style={{ ...transmitPanelStyle, width: 'min(540px, calc(100vw - 48px))', marginLeft: 'auto', textAlign: 'left' }}>
-          <h2 className="section-label">05 / TRANSMIT</h2>
-          <h3 style={{ fontSize: 'clamp(44px, 3.2vw, 58px)', color: '#fff', fontFamily: 'Cinzel, serif', lineHeight: '1.0', marginBottom: '2rem' }}>LET'S BUILD<br />SOMETHING.</h3>
+        <div 
+          style={{ 
+            ...transmitPanelStyle, 
+            width: isCompact ? 'min(44vw, 480px)' : 'min(540px, calc(100vw - 48px))', 
+            maxWidth: isCompact ? '480px' : '540px',
+            marginLeft: 'auto', 
+            textAlign: 'left',
+            maxHeight: (isCompact && isKeyboardActive) ? 'calc(100dvh - 16px)' : (isCompact ? 'min(375px, calc(100dvh - 20px))' : 'none'),
+            overflowY: isCompact ? 'auto' : 'visible'
+          }}
+          className={isCompact ? 'responsive-card-scroll' : ''}
+          onTouchMove={e => e.stopPropagation()}
+        >
+          <h2 className="section-label" style={{ 
+            fontSize: isCompact ? '12px' : '14px', 
+            letterSpacing: isCompact ? '0.22em' : '4px',
+            marginBottom: isCompact ? '6px' : '1rem' 
+          }}>05 / TRANSMIT</h2>
+          <h3 style={{ 
+            fontSize: isCompact ? 'clamp(26px, 4.2vw, 36px)' : 'clamp(44px, 3.2vw, 58px)', 
+            color: '#fff', 
+            fontFamily: 'Cinzel, serif', 
+            lineHeight: isCompact ? '0.98' : '1.05', 
+            marginBottom: isCompact ? '8px' : '2rem' 
+          }}>LET'S BUILD<br />SOMETHING.</h3>
 
           {/* Compact Contact Form */}
           <form
-            style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%', marginBottom: '2.5rem' }}
+            style={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              gap: isCompact ? '8px' : '16px', 
+              width: '100%', 
+              marginBottom: isCompact ? '6px' : '2.5rem' 
+            }}
             onSubmit={async (e) => {
               e.preventDefault();
               const form = e.target;
@@ -749,15 +915,18 @@ const PortfolioOverlay = () => {
               required
               type="text"
               placeholder="NAME"
+              onFocus={() => { if (isCompact) setIsKeyboardActive(true); }}
+              onBlur={() => { setIsKeyboardActive(false); }}
               style={{
                 background: 'rgba(0,0,0,0.28)',
                 border: '1px solid rgba(0,252,240,0.2)',
-                padding: '16px',
-                fontSize: '15px',
+                padding: isCompact ? '6px 12px' : '16px',
+                fontSize: isCompact ? '13.5px' : '15px',
                 color: '#fff',
                 borderRadius: '2px',
                 outline: 'none',
-                height: '56px',
+                height: isCompact ? '38px' : '56px',
+                minHeight: isCompact ? '38px' : '56px',
                 boxSizing: 'border-box'
               }}
             />
@@ -766,15 +935,18 @@ const PortfolioOverlay = () => {
               required
               type="email"
               placeholder="EMAIL"
+              onFocus={() => { if (isCompact) setIsKeyboardActive(true); }}
+              onBlur={() => { setIsKeyboardActive(false); }}
               style={{
                 background: 'rgba(0,0,0,0.28)',
                 border: '1px solid rgba(0,252,240,0.2)',
-                padding: '16px',
-                fontSize: '15px',
+                padding: isCompact ? '6px 12px' : '16px',
+                fontSize: isCompact ? '13.5px' : '15px',
                 color: '#fff',
                 borderRadius: '2px',
                 outline: 'none',
-                height: '56px',
+                height: isCompact ? '38px' : '56px',
+                minHeight: isCompact ? '38px' : '56px',
                 boxSizing: 'border-box'
               }}
             />
@@ -782,16 +954,19 @@ const PortfolioOverlay = () => {
               name="message"
               required
               placeholder="MESSAGE"
+              onFocus={() => { if (isCompact) setIsKeyboardActive(true); }}
+              onBlur={() => { setIsKeyboardActive(false); }}
               style={{
                 background: 'rgba(0,0,0,0.28)',
                 border: '1px solid rgba(0,252,240,0.2)',
-                padding: '16px',
-                fontSize: '15px',
+                padding: isCompact ? '6px 12px' : '16px',
+                fontSize: isCompact ? '13.5px' : '15px',
                 color: '#fff',
                 borderRadius: '2px',
                 outline: 'none',
                 resize: 'none',
-                height: '145px',
+                height: isCompact ? '74px' : '145px',
+                minHeight: isCompact ? '74px' : '145px',
                 boxSizing: 'border-box'
               }}
             ></textarea>
@@ -814,9 +989,10 @@ const PortfolioOverlay = () => {
                     ? '#ff4b4b'
                     : 'var(--sculk-cyan)',
                 padding: '0',
-                height: '56px',
+                height: isCompact ? '40px' : '56px',
+                minHeight: isCompact ? '40px' : '56px',
                 letterSpacing: '2px',
-                fontSize: '15px',
+                fontSize: isCompact ? '13px' : '15px',
                 cursor: formFeedback.state === 'submitting' ? 'wait' : 'pointer',
                 transition: 'all 0.3s ease',
                 boxSizing: 'border-box'
@@ -834,8 +1010,8 @@ const PortfolioOverlay = () => {
               <p
                 style={{
                   margin: '0',
-                  fontSize: '13px',
-                  lineHeight: '1.4',
+                  fontSize: '11px',
+                  lineHeight: '1.3',
                   color:
                     formFeedback.state === 'success'
                       ? '#00ff88'
@@ -850,15 +1026,15 @@ const PortfolioOverlay = () => {
             )}
           </form>
 
-          <div style={{ display: 'flex', gap: '2rem', justifyContent: 'flex-start' }}>
-            <a href={`mailto:${portfolioData.contact.email}`} className="cinematic-link" style={{ fontSize: '14px', letterSpacing: '2px' }}>EMAIL</a>
-            <a href={portfolioData.contact.github} className="cinematic-link" style={{ fontSize: '14px', letterSpacing: '2px' }}>GITHUB</a>
-            <a href={portfolioData.contact.linkedin} className="cinematic-link" style={{ fontSize: '14px', letterSpacing: '2px' }}>LINKEDIN</a>
+          <div style={{ display: 'flex', gap: isCompact ? '22px' : '2rem', marginTop: isCompact ? '12px' : '0', justifyContent: 'flex-start' }}>
+            <a href={`mailto:${portfolioData.contact.email}`} className="cinematic-link" style={{ fontSize: isCompact ? '11.5px' : '14px', letterSpacing: '2px', minHeight: isCompact ? '30px' : '38px', display: 'inline-flex', alignItems: 'center' }}>EMAIL</a>
+            <a href={portfolioData.contact.github} className="cinematic-link" style={{ fontSize: isCompact ? '11.5px' : '14px', letterSpacing: '2px', minHeight: isCompact ? '30px' : '38px', display: 'inline-flex', alignItems: 'center' }}>GITHUB</a>
+            <a href={portfolioData.contact.linkedin} className="cinematic-link" style={{ fontSize: isCompact ? '11.5px' : '14px', letterSpacing: '2px', minHeight: isCompact ? '30px' : '38px', display: 'inline-flex', alignItems: 'center' }}>LINKEDIN</a>
           </div>
         </div>
       </div>
 
-      <SculkEcho />
+      <SculkEcho isLandscapePhone={isCompact} />
     </div>
   );
 };
@@ -866,7 +1042,13 @@ const PortfolioOverlay = () => {
 // ============================================================
 // Main Export — native scroll, no drei ScrollControls
 // ============================================================
-export default function AncientCityJourney() {
+export default function AncientCityJourney({ 
+  isPaused = false, 
+  isLandscapePhone = false,
+  isSmallLandscape = false, 
+  isTabletLandscape = false, 
+  isTouch = false 
+}) {
   // Listen to native window scroll
   React.useEffect(() => {
     const onScroll = () => {
@@ -880,25 +1062,33 @@ export default function AncientCityJourney() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  const isCompactPhone = isLandscapePhone || isSmallLandscape;
+
   return (
     <>
       {/* Scroll driver — creates 800vh of native scroll distance */}
       <div className="scroll-driver" style={{ height: '800vh', width: '100%', position: 'relative', zIndex: -1 }} />
 
       {/* 3D Canvas layer — fixed viewport */}
-      <div style={{ width: '100vw', height: '100vh', position: 'fixed', top: 0, left: 0, zIndex: 0, background: '#020406' }}>
-        <Canvas shadows camera={{ position: [0, 1.6, 15], fov: 65 }} gl={{ antialias: false, powerPreference: "high-performance", localClippingEnabled: true }}>
+      <div style={{ width: '100vw', height: '100dvh', position: 'fixed', top: 0, left: 0, zIndex: 0, background: '#020406' }}>
+        <Canvas 
+          frameloop={isPaused ? "demand" : "always"}
+          shadows 
+          dpr={typeof window !== 'undefined' ? (isCompactPhone ? Math.min(window.devicePixelRatio, 1.25) : isTabletLandscape ? Math.min(window.devicePixelRatio, 1.5) : Math.min(window.devicePixelRatio, 2)) : 1}
+          camera={{ position: [0, 1.6, 15], fov: 65 }} 
+          gl={{ antialias: false, powerPreference: "high-performance", localClippingEnabled: true }}
+        >
 
           {/* Dynamic Environment Progression handles fog and ambient lighting */}
           <EnvironmentProgression />
 
           <React.Suspense fallback={null}>
 
-            <CinematicCamera />
+            <CinematicCamera isPaused={isPaused} isTouch={isTouch} />
 
             {/* The 3D environment is FIXED in world space */}
             <AncientCityGeometry />
-            <Particles />
+            <Particles isPaused={isPaused} />
 
             {/* Warden Encounter at Z = -106.5, Middle-Left */}
             <group position={[-2.5, 0, -106.5]}>
@@ -915,7 +1105,11 @@ export default function AncientCityJourney() {
       </div>
 
       {/* Portfolio HTML overlay — COMPLETELY outside Canvas */}
-      <PortfolioOverlay />
+      <PortfolioOverlay 
+        isLandscapePhone={isCompactPhone} 
+        isTabletLandscape={isTabletLandscape}
+        isTouch={isTouch} 
+      />
     </>
   );
 }
