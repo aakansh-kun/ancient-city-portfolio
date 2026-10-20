@@ -507,6 +507,31 @@ h1, h2, h3 {
     align-items: center !important;
   }
 
+  /* Unobtrusive Fullscreen Control */
+  .fullscreen-toggle-btn {
+    background: rgba(0, 252, 240, 0.08);
+    border: 1px solid rgba(0, 252, 240, 0.35);
+    color: var(--sculk-cyan);
+    width: 32px;
+    height: 32px;
+    border-radius: 3px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+    transition: all 0.25s ease;
+    box-sizing: border-box;
+    margin-left: 2px;
+  }
+
+  .fullscreen-toggle-btn:hover,
+  .fullscreen-toggle-btn:active {
+    background: rgba(0, 252, 240, 0.2);
+    border-color: var(--sculk-cyan);
+    box-shadow: 0 0 10px rgba(0, 252, 240, 0.3);
+  }
+
   /* Descend Indicator — scaled down ~28%, clear of notch & screen bounds */
   .scroll-indicator {
     bottom: max(14px, env(safe-area-inset-bottom)) !important;

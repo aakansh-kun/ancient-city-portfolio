@@ -1,17 +1,36 @@
-import React from 'react'
+import React, { useState } from 'react'
 import './App.css'
 import AncientCityJourney, { globalFlags } from './AncientCityJourney'
 import { portfolioData } from './portfolioData'
 import RotateDeviceScreen from './RotateDeviceScreen'
-import { useOrientation } from './hooks/useOrientation'
+import LandscapeFullscreenOverlay from './LandscapeFullscreenOverlay'
+import { useOrientation, requestFullscreenSafe, exitFullscreenSafe } from './hooks/useOrientation'
 
 function App() {
-  const { isTouchDevice, isLandscapePhone, isTabletLandscape, shouldShowRotateSplash } = useOrientation();
+  const { isTouchDevice, isLandscapePhone, isTabletLandscape, shouldShowRotateSplash, isFullscreen } = useOrientation();
+  const [isFullscreenOverlayDismissed, setIsFullscreenOverlayDismissed] = useState(false);
+
+  const shouldShowFullscreenOverlay = isLandscapePhone && !shouldShowRotateSplash && !isFullscreen && !isFullscreenOverlayDismissed;
+
+  const handleToggleFullscreen = (e) => {
+    e.preventDefault();
+    if (isFullscreen) {
+      exitFullscreenSafe();
+    } else {
+      requestFullscreenSafe();
+    }
+  };
 
   return (
     <div className={`minecraft-wrapper ${isLandscapePhone ? 'compact-landscape-phone' : ''}`}>
       {/* Rotate Device Screen (Cinematic Deep Dark splash for touch portrait) */}
       <RotateDeviceScreen isVisible={shouldShowRotateSplash} />
+
+      {/* Landscape Fullscreen Entry Overlay (Mobile landscape only) */}
+      <LandscapeFullscreenOverlay 
+        isVisible={shouldShowFullscreenOverlay}
+        onDismiss={() => setIsFullscreenOverlayDismissed(true)}
+      />
 
       {/* Minimal Top Navigation */}
       <nav className="minimal-nav">
@@ -26,6 +45,26 @@ function App() {
             globalFlags.skipWardenCinematic = true;
             window.scrollTo({ top: max, behavior: 'smooth' }); 
           }} style={{cursor:'pointer', color:'var(--sculk-blue)'}}>TRANSMIT</span>
+
+          {/* Unobtrusive Fullscreen Control for Mobile Landscape */}
+          {isLandscapePhone && (
+            <button
+              className="fullscreen-toggle-btn"
+              onClick={handleToggleFullscreen}
+              aria-label={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+              title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+            >
+              {isFullscreen ? (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3" />
+                </svg>
+              ) : (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+                </svg>
+              )}
+            </button>
+          )}
         </div>
       </nav>
 
